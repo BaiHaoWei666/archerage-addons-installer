@@ -3,7 +3,9 @@ package main
 import (
 	"archive/zip"
 	"context"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -138,5 +140,54 @@ func TestVersionsAndBOM(t *testing.T) {
 	current := installedVersion(dir, "demo")
 	if current == nil || *current != "1.0.0" || isNewer("1.0", current) || !isNewer("1.0.1", current) {
 		t.Fatal("version comparison failed")
+	}
+}
+
+func TestDevelopmentJunctionIsProtected(t *testing.T) {
+	root := t.TempDir()
+	addonDir := filepath.Join(root, "Addon")
+	source := filepath.Join(root, "source")
+	link := filepath.Join(addonDir, "demo")
+	writeFixture(t, filepath.Join(source, "main.lua"), "development")
+	if err := os.MkdirAll(addonDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if output, err := exec.Command("cmd", "/c", "mklink", "/J", link, source).CombinedOutput(); err != nil {
+		t.Fatalf("建立測試 Junction：%v %s", err, output)
+	}
+	// 僅移除已知的測試連結，不遞迴處理來源。
+	defer os.Remove(link)
+	release := filepath.Join(root, "release")
+	if err := os.MkdirAll(release, 0755); err != nil {
+		t.Fatal(err)
+	}
+	makeArchive(t, filepath.Join(release, "demo.zip"), map[string]string{"demo/main.lua": "release"})
+	src := NewReleaseSource(release, func() string { return "" })
+	_, err := installAddon(context.Background(), src, addonDir, &AddonInfo{Name: "demo"}, nil)
+	if err == nil || !strings.Contains(err.Error(), "開發連結") {
+		t.Fatalf("應明確拒絕更新開發連結：%v", err)
+	}
+	err = uninstallAddon(addonDir, "demo")
+	if err == nil || !strings.Contains(err.Error(), "開發連結") {
+		t.Fatalf("應明確拒絕移除開發連結：%v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(source, "main.lua"))
+	if err != nil || string(got) != "development" {
+		t.Fatal("開發來源被修改")
+	}
+	if !isDir(link) {
+		t.Fatal("開發連結被移除")
+	}
+	if _, err := os.Stat(filepath.Join(addonDir, "Backup")); !os.IsNotExist(err) {
+		t.Fatal("拒絕操作不應建立空備份")
+	}
+}
+
+func TestLocalPathErrorIsNotNetworkError(t *testing.T) {
+	src := NewReleaseSource("", func() string { return "" })
+	err := &os.PathError{Op: "open", Path: "Backup/demo", Err: fmt.Errorf("is a directory")}
+	message := src.describeError(err)
+	if strings.Contains(message, "GitHub") || !strings.Contains(message, "Backup/demo") {
+		t.Fatalf("本機錯誤分類不正確：%s", message)
 	}
 }

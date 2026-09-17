@@ -63,6 +63,10 @@ func installAddon(ctx context.Context, src *ReleaseSource, addonDir string, addo
 		return false, fmt.Errorf("manifest.json 裡的插件名稱不合法：「%s」", addon.Name)
 	}
 
+	if err := checkAddonLink(filepath.Join(addonDir, addon.Name)); err != nil {
+		return false, err
+	}
+
 	work, err := os.MkdirTemp("", appDirName+"-")
 	if err != nil {
 		return false, err
@@ -100,6 +104,9 @@ func uninstallAddon(addonDir, name string) error {
 		return fmt.Errorf("插件名稱不合法：「%s」", name)
 	}
 	target := filepath.Join(addonDir, name)
+	if err := checkAddonLink(target); err != nil {
+		return err
+	}
 	if !isDir(target) {
 		return fmt.Errorf("%s 沒有安裝", name)
 	}
@@ -109,7 +116,37 @@ func uninstallAddon(addonDir, name string) error {
 	return os.RemoveAll(target)
 }
 
+// 開發連結會直接寫入專案；更新與移除前先拒絕操作。
+func checkAddonLink(path string) error {
+	_, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	name, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return err
+	}
+	var data windows.Win32finddata
+	handle, err := windows.FindFirstFile(name, &data)
+	if err != nil {
+		return err
+	}
+	windows.FindClose(handle)
+	// 只辨識目錄轉接與符號連結，不攔截 OneDrive 的其他重解析點。
+	if data.FileAttributes&windows.FILE_ATTRIBUTE_REPARSE_POINT != 0 &&
+		(data.Reserved0 == windows.IO_REPARSE_TAG_MOUNT_POINT || data.Reserved0 == windows.IO_REPARSE_TAG_SYMLINK) {
+		return fmt.Errorf("%s 正使用開發連結（Junction／符號連結），無法透過安裝器更新或移除。請在專案中修改，或先改回一般插件資料夾。", filepath.Base(path))
+	}
+	return nil
+}
+
 func backupAddon(addonDir, name string) (string, error) {
+	if err := checkAddonLink(filepath.Join(addonDir, name)); err != nil {
+		return "", err
+	}
 	root := filepath.Join(addonDir, "Backup")
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return "", err
