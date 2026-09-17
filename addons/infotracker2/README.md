@@ -1,9 +1,11 @@
 # InfoTracker v2（資訊追蹤）
 
-合併 infotracker 與 choretracker：
+以 infotracker 的部分程式與功能為基礎延伸開發，僅參考 choretracker 的 UI 操作概念：
 
 - 項目與判定沿用 infotracker（任務用 ID 池 + 上限，不分陣營都能計入；角色資訊、今日淨收入、副本建隊也照原版）
-- 操作方式參考 choretracker（勾選、排序、展開、懸浮小窗）
+- 對 choretracker 僅參考 UI 操作概念（勾選追蹤、上下排序、展開明細、懸浮小窗）；UI 使用遊戲內建 API 與元件樣式實作。
+
+infotracker 原作者：**Discord @Nevermore (奈奈呀)**。依作者同意，本插件維持原始碼公開、免費使用；本專案只為新增或修改部分署名。授權原話、衍生功能對照與 choretracker 概念參考說明，見 [版權、來源與授權說明](COPYRIGHT.md)。
 
 ## 分類
 
