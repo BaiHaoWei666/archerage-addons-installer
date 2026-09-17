@@ -34,6 +34,7 @@ type App struct {
 	busy              bool
 	busyText          string
 	busyPercent       int
+	busyDownload      *DownloadProgress
 	cancelBusy        context.CancelFunc
 	selfUpdateOffered bool
 	token             string
@@ -228,6 +229,7 @@ func (a *App) postState() {
 		"error":        a.manifestErr,
 		"busy":         a.busyText,
 		"busyProgress": a.busyPercent,
+		"download":     a.busyDownload,
 		"token":        a.tokenInfo,
 	}
 	a.mu.Unlock()
@@ -322,8 +324,24 @@ func (a *App) runBusy(text string, work func(ctx context.Context, progress func(
 func (a *App) setBusy(text string, percent int) {
 	a.mu.Lock()
 	a.busyText, a.busyPercent = text, percent
+	a.busyDownload = nil
 	a.mu.Unlock()
 	a.emit(map[string]interface{}{"type": "busy", "text": text, "progress": percent})
+}
+
+func (a *App) setDownloadProgress(p DownloadProgress) {
+	percent := 0
+	if p.Total > 0 {
+		percent = int(float64(p.Received) / float64(p.Total) * 100)
+	}
+	if percent > 100 {
+		percent = 100
+	}
+	a.mu.Lock()
+	a.busyPercent, a.busyDownload = percent, &p
+	text := a.busyText
+	a.mu.Unlock()
+	a.emit(map[string]interface{}{"type": "busy", "text": text, "progress": percent, "download": p})
 }
 
 func (a *App) isBusy() bool {
@@ -503,7 +521,7 @@ func (a *App) selfUpdate() {
 	}
 
 	err := a.runBusy("正在下載新版安裝工具…", func(ctx context.Context, progress func(float64)) error {
-		return replaceSelf(ctx, a.source, progress)
+		return replaceSelf(ctx, a.source, a.setDownloadProgress)
 	})
 	switch {
 	case errors.Is(err, errBusy):

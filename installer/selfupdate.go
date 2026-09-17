@@ -50,13 +50,13 @@ func installerIsNewer(latest string) bool {
 }
 
 // replaceSelf 下載新版、換掉自己並啟動新版；成功後呼叫端要結束程式。
-func replaceSelf(ctx context.Context, src *ReleaseSource, progress func(float64)) error {
+func replaceSelf(ctx context.Context, src *ReleaseSource, progress func(DownloadProgress)) error {
 	exe, err := exePath()
 	if err != nil {
 		return err
 	}
 	newPath := siblingPath(exe, ".new.exe")
-	if err := src.Download(ctx, exeName, newPath, progress); err != nil {
+	if err := src.Download(ctx, exeName, newPath, nil, progress); err != nil {
 		os.Remove(newPath)
 		return err
 	}
