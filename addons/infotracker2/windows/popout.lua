@@ -1,8 +1,8 @@
--- 悬浮小窗
--- 标题栏：根视窗（位置存档存它），常驻显示目前分类；单击展开分类选单；Shift + 左键拖动可移动；
---         左右切页（到头尾时停用，不绕回）与齿轮只在鼠标悬停时出现
--- 本体：挂在标题栏下方，固定高度，列出目前分类里已追踪的项目，超出时卷动
--- 宽高、字体、不透明度来自面板设定，改变时由 Popout.ApplyLayout() 套用
+-- 懸浮小窗
+-- 標題欄：根視窗（位置存檔存它），常駐顯示目前分類；單擊展開分類選單；Shift + 左鍵拖動可移動；
+--         左右切頁（到頭尾時停用，不繞回）與齒輪只在滑鼠懸停時出現
+-- 本體：掛在標題欄下方，固定高度，列出目前分類裡已追蹤的項目，超出時捲動
+-- 寬高、字體、不透明度來自面板設定，改變時由 Popout.ApplyLayout() 套用
 local T = ITV2.Text
 local CATEGORIES = ITV2.CATEGORIES
 local Items = ITV2.Items
@@ -15,20 +15,20 @@ ITV2.Popout = Popout
 local HEADER_MIN_HEIGHT = 26
 local DEFAULT_X = 460
 local DEFAULT_Y = 64
-local PADDING_TOP = 4        -- 本体上方留白
-local PADDING_BOTTOM = 10    -- 本体下方留白
-local PADDING_LEFT = 10      -- 文字左边留白
-local TEXT_BAR_GAP = 10      -- 文字右边到卷轴的留白
-local BAR_RIGHT = 2          -- 卷轴到右边框
+local PADDING_TOP = 4        -- 本體上方留白
+local PADDING_BOTTOM = 10    -- 本體下方留白
+local PADDING_LEFT = 10      -- 文字左邊留白
+local TEXT_BAR_GAP = 10      -- 文字右邊到捲軸的留白
+local BAR_RIGHT = 2          -- 捲軸到右邊框
 local SUB_INDENT = 10
-local EXPANDED_GAP = 2       -- 展开的细项下方留白
+local EXPANDED_GAP = 2       -- 展開的細項下方留白
 local ARROW_SIZE = 18
 local EDIT_SIZE = 22
-local BG_COLOR = { 0, 0, 0 } -- 本体与标题栏共用；不透明度来自面板设定 bgAlpha
+local BG_COLOR = { 0, 0, 0 } -- 本體與標題欄共用；不透明度來自面板設定 bgAlpha
 local REFRESH_MS = 5000
 local HOVER_LINGER_MS = 400
 
--- 由面板设定推算的版面尺寸
+-- 由面板設定推算的版面尺寸
 local function HeaderHeight()
     return math.max(HEADER_MIN_HEIGHT, S.panel.fontTitle + 12)
 end
@@ -38,7 +38,7 @@ end
 local function SubRowHeight()
     return S.panel.fontSub + 6
 end
--- 左留白 | 文字 | 文字到卷轴留白 | 卷轴 | 右边框
+-- 左留白 | 文字 | 文字到捲軸留白 | 捲軸 | 右邊框
 local function ListWidth()
     return S.panel.width - PADDING_LEFT - TEXT_BAR_GAP - UI.SCROLL_BAR_WIDTH - BAR_RIGHT
 end
@@ -48,7 +48,7 @@ local function ToggleEditor()
 end
 
 -- ============================================
--- 标题栏
+-- 標題欄
 -- ============================================
 local header = CreateEmptyWindow("itv2PopoutHeader", "UIParent")
 header:SetCloseOnEscape(false)
@@ -65,7 +65,7 @@ local function AnchorHeader()
     end
 end
 
--- 标题栏单击（没有拖动）时开关分类选单，拖动过就不算单击
+-- 標題欄單擊（沒有拖動）時開關分類選單，拖動過就不算單擊
 local headerDragged = false
 local function CanDragHeader()
     headerDragged = true
@@ -107,7 +107,7 @@ nextButton:SetExtent(ARROW_SIZE, ARROW_SIZE)
 nextButton:AddAnchor("RIGHT", header, -(3 + EDIT_SIZE + 4), 0)
 
 -- ============================================
--- 本体
+-- 本體
 -- ============================================
 local body = CreateEmptyWindow("itv2PopoutWindow", "UIParent")
 body:SetCloseOnEscape(false)
@@ -124,11 +124,11 @@ local area = UI.CreateScrollArea(body, "itv2PopList", function()
 end)
 local listParent = area.content
 
-local expanded = {}   -- { [itemKey] = true }（只存在本次游戏中）
+local expanded = {}   -- { [itemKey] = true }（只存在本次遊戲中）
 local rows = {}
 local subRows = {}
 
--- 没有追踪项目时的提示，点了打开设定窗口
+-- 沒有追蹤項目時的提示，點了打開設定窗口
 local emptyHint = UI.CreateTextButton(listParent, "itv2PopEmpty", T("EMPTY_HINT"), 100, 22)
 UI.OnLeftClick(emptyHint, ToggleEditor)
 
@@ -153,8 +153,8 @@ UI.OnLeftClick(nextButton, function()
 end)
 
 -- ============================================
--- 分类选单：单击标题栏展开在标题下方，列出开着的分类（目前分类绿色），点选切换
--- 独立视窗，建立在本体之后并在显示时 Raise，才会盖在本体上面
+-- 分類選單：單擊標題欄展開在標題下方，列出開著的分類（目前分類綠色），點選切換
+-- 獨立視窗，建立在本體之後並在顯示時 Raise，才會蓋在本體上面
 -- ============================================
 local menu = CreateEmptyWindow("itv2PopPageMenu", "UIParent")
 menu:SetCloseOnEscape(false)
@@ -238,7 +238,7 @@ local function StyleSubRow(label)
     label.style:SetFontSize(S.panel.fontSub)
 end
 
--- 项目行：能展开的单击展开 / 收起；有动作的（副本）双击跳出询问窗，单击不动作避免误触
+-- 項目行：能展開的單擊展開 / 收起；有動作的（副本）雙擊跳出詢問窗，單擊不動作避免誤觸
 local function OnRowClick(self, doubleClick)
     local key = self.itemKey
     if key == nil then
@@ -301,12 +301,12 @@ function Popout.ApplyLayout()
 end
 
 -- ============================================
--- 悬停：显示切页 / 齿轮按钮与卷轴
+-- 懸停：顯示切頁 / 齒輪按鈕與捲軸
 -- ============================================
 local hovered = false
 local leftFor = 0
 
--- 卷轴平时隐藏（位置仍保留，内容宽度不变），悬停且内容超出时才出现
+-- 捲軸平時隱藏（位置仍保留，內容寬度不變），懸停且內容超出時才出現
 local function UpdateBarVisible()
     area.bar:Show(hovered and area.scrollable == true)
 end
@@ -337,12 +337,12 @@ local function IsMouseOver()
         or (menu:IsVisible() and menu:IsMouseOver()) then
         return true
     end
-    -- 可点击的行会接走滑鼠，另外检查
+    -- 可點擊的行會接走滑鼠，另外檢查
     return IsAnyMouseOver(rows) or IsAnyMouseOver(subRows) or IsAnyMouseOver(menuRows)
 end
 
 -- ============================================
--- 排版与刷新
+-- 排版與刷新
 -- ============================================
 local function Layout(cat, revealKey)
     local ctx = Items.NewContext()
@@ -417,7 +417,7 @@ function Popout.Refresh(revealKey)
         Layout(cat)
     end
     UpdateBarVisible()
-    -- 分类的顺序、开关或面板外观改了，选单也跟着更新
+    -- 分類的順序、開關或面板外觀改了，選單也跟著更新
     if menu:IsVisible() then
         LayoutPageMenu()
     end
@@ -427,7 +427,7 @@ local elapsed = REFRESH_MS
 body:SetHandler("OnUpdate", function(self, dt)
     Items.TickSources(dt)
 
-    -- 悬停（本体或标题栏）才显示按钮；离开后稍等一下再收起
+    -- 懸停（本體或標題欄）才顯示按鈕；離開後稍等一下再收起
     if IsMouseOver() then
         leftFor = 0
         if not hovered then
@@ -448,7 +448,7 @@ body:SetHandler("OnUpdate", function(self, dt)
     Popout.Refresh()
 end)
 
--- 载入设定后呼叫
+-- 載入設定後呼叫
 function Popout.Init()
     AnchorHeader()
     Popout.ApplyLayout()

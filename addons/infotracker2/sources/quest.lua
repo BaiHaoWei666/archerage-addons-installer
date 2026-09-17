@@ -1,5 +1,5 @@
--- 任务组（每日 / 生活 / 周常 / 其他）
--- 完成数沿用 infotracker：池子里已完成的 ID 数，最多算到上限；不分阵营都能计入
+-- 任務組（每日 / 生活 / 週常 / 其他）
+-- 完成數沿用 infotracker：池子裡已完成的 ID 數，最多算到上限；不分陣營都能計入
 ADDON:ImportAPI(API_TYPE.QUEST.id)
 
 local T = ITV2.Text
@@ -13,8 +13,8 @@ local function IsActive(questId, ctx)
     return Util.GetJournalIndexMap(ctx)[questId] ~= nil
 end
 
--- 名称不同但要当成同一行的任务（quest_data.lua 里项目的 merge 设定，名称必须完全相同）
--- 例：迷雾的「石材不足」「木材不足」…每天只会轮到其中一个，合并成「物资不足」
+-- 名稱不同但要當成同一行的任務（quest_data.lua 裡項目的 merge 設定，名稱必須完全相同）
+-- 例：迷霧的「石材不足」「木材不足」…每天只會輪到其中一個，合併成「物資不足」
 local mergeMapCache = {}
 
 local function GetMergeTitle(item, title)
@@ -35,7 +35,7 @@ local function GetMergeTitle(item, title)
     return title
 end
 
--- 按任务名称合并（不同阵营同名任务只算一行），保持第一次出现的顺序
+-- 按任務名稱合併（不同陣營同名任務只算一行），保持第一次出現的順序
 local function GetMergedQuests(item, ctx)
     local entries = {}
     local byName = {}
@@ -96,7 +96,7 @@ ITV2.SOURCES.quest = {
         return out
     end,
 
-    -- 核对用：把「名称 → ID」输出到聊天框（* 已完成，~ 进行中）
+    -- 核對用：把「名稱 → ID」輸出到聊天框（* 已完成，~ 進行中）
     Dump = function(item, ctx)
         ITV2.Chat(string.format(T("DUMP_HEADER"), T(item.key), item.max or #item.ids))
         for _, entry in ipairs(GetMergedQuests(item, ctx)) do
