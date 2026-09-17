@@ -39,7 +39,7 @@ const S = {
   generation: -1,
   details: {},          // 名稱 → 說明 HTML（undefined = 載入中，null = 沒有）
   brokenIcons: new Set(),
-  busy: null,           // { text, progress }
+  busy: null,           // 忙碌提示：文字、百分比及下載統計
   showOlder: false,
 };
 
@@ -367,12 +367,29 @@ function renderSettings() {
   $('#tokenInput').value = typedToken;
 }
 
+function formatBytes(value) {
+  const bytes = Math.max(0, Number(value) || 0);
+  if (bytes < 1024) return `${Math.round(bytes)} B`;
+  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KiB`;
+  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MiB`;
+  return `${(bytes / 1024 ** 3).toFixed(2)} GiB`;
+}
+
 function renderBusy() {
   const b = S.busy;
   $('#busy').hidden = !b;
   if (b) {
     $('#busyText').textContent = b.text;
     $('#busyBar').style.width = `${b.progress}%`;
+    const d = b.download;
+    $('#busyStats').hidden = !d;
+    $('#busyBar').classList.toggle('indeterminate', !!d && d.total <= 0);
+    if (d) {
+      const size = d.total > 0
+        ? `${b.progress}% · ${formatBytes(d.received)} / ${formatBytes(d.total)}`
+        : `已下載 ${formatBytes(d.received)} · 總大小未知`;
+      $('#busyStats').textContent = `${size} · ${formatBytes(d.bytesPerSecond)}/s`;
+    }
   }
 }
 
@@ -528,7 +545,7 @@ function onMessage(m) {
       S.data = m;
       if (m.needsToken || (!m.source && !m.loaded && m.error)) S.view = 'settings';
       else if (wasTokenRequired && m.loaded) S.view = 'browse';
-      S.busy = m.busy ? { text: m.busy, progress: m.busyProgress } : null;
+      S.busy = m.busy ? { text: m.busy, progress: m.busyProgress, download: m.download } : null;
       if (S.selected && !find(S.selected)) S.selected = null;
       render();
       renderBusy();
@@ -536,7 +553,7 @@ function onMessage(m) {
     }
     case 'busy': {
       const wasBusy = !!S.busy;
-      S.busy = m.text ? { text: m.text, progress: m.progress } : null;
+      S.busy = m.text ? { text: m.text, progress: m.progress, download: m.download } : null;
       renderBusy();
       if (wasBusy !== !!S.busy && S.data) render();
       break;

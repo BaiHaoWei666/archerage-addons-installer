@@ -131,8 +131,15 @@ func isNotFound(err error) bool {
 		errors.Is(err, os.ErrNotExist)
 }
 
-// Download 下載檔案到 dest，progress 會收到 0～1 的進度。
-func (s *ReleaseSource) Download(ctx context.Context, name, dest string, progress func(float64)) error {
+// DownloadProgress 記錄已寫入的位元組數；Total <= 0 代表來源未提供總大小。
+type DownloadProgress struct {
+	Received       int64   `json:"received"`
+	Total          int64   `json:"total"`
+	BytesPerSecond float64 `json:"bytesPerSecond"`
+}
+
+// Download 下載檔案到 dest，progress 會收到 0～1 的進度；detail 額外回報大小與速度。
+func (s *ReleaseSource) Download(ctx context.Context, name, dest string, progress func(float64), detail ...func(DownloadProgress)) error {
 	body, size, err := s.open(ctx, name)
 	if err != nil {
 		return err
@@ -147,13 +154,38 @@ func (s *ReleaseSource) Download(ctx context.Context, name, dest string, progres
 
 	buf := make([]byte, 128<<10)
 	var received int64
+	lastTime, lastBytes := time.Now(), int64(0)
+	lastSpeed := float64(0)
+	report := func(force bool) {
+		now := time.Now()
+		elapsed := now.Sub(lastTime).Seconds()
+		if !force && elapsed < 0.2 {
+			return
+		}
+		speed := lastSpeed
+		if elapsed > 0 && received > lastBytes {
+			speed = float64(received-lastBytes) / elapsed
+		}
+		for _, callback := range detail {
+			if callback != nil {
+				callback(DownloadProgress{received, size, speed})
+			}
+		}
+		lastTime, lastBytes = now, received
+		lastSpeed = speed
+	}
+	report(true)
 	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		n, rerr := body.Read(buf)
 		if n > 0 {
 			if _, werr := f.Write(buf[:n]); werr != nil {
 				return werr
 			}
 			received += int64(n)
+			report(false)
 			if size > 0 && progress != nil {
 				progress(float64(received) / float64(size))
 			}
@@ -165,7 +197,11 @@ func (s *ReleaseSource) Download(ctx context.Context, name, dest string, progres
 			return rerr
 		}
 	}
-	return f.Close()
+	if err := f.Close(); err != nil {
+		return err
+	}
+	report(true)
+	return nil
 }
 
 func (s *ReleaseSource) open(ctx context.Context, name string) (io.ReadCloser, int64, error) {
