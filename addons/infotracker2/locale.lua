@@ -1,4 +1,4 @@
--- 中英文文字：ITV2.Text(key)，找不到时回传 key 本身
+-- 中英文文字：ITV2.Text(key)，找不到時回傳 key 本身
 ADDON:ImportAPI(API_TYPE.LOCALE.id)
 
 local isCN = (X2Locale:GetLocale() or "en_us") == "zh_cn"
@@ -48,14 +48,16 @@ if isCN then
     texts.GARDENBOSS = "庭院"
     texts.YNYSWORD = "净化(东)"
     texts.CINDERSWORD = "净化(西)"
+    texts.IPNYSH_DAILY = "伊福尼尔"
+    texts.TREE_MAMMOTH = "大象+大树"
 
-    -- 每日挑战
+    -- 每日挑戰
     texts.CAT_CHALLENGE = "每日挑战"
     texts.CHALLENGE_SLOT = "挑战 %d"
     texts.AUCTION_OPEN_FAILED = "[资讯追踪] 无法打开拍卖场：%s"
     texts.AUCTION_SEARCH_FAILED = "[资讯追踪] 拍卖场查询失败：%s"
 
-    -- 角色信息
+    -- 角色資訊
     texts.CAT_INFO = "角色信息"
     texts.INFO_BLESSING = "国王雕像Buff"
     texts.INFO_COSTUME = "时装"
@@ -70,7 +72,7 @@ if isCN then
     texts.STATE_UNLOCKED = "已解锁"
     texts.STATE_LOCKED = "未解锁"
 
-    -- 今日净收入
+    -- 今日淨收入
     texts.CAT_INCOME = "今日净收入"
     texts.INC_EXP = "经验:"
     texts.INC_GOLD = "金币:"
@@ -101,7 +103,7 @@ if isCN then
     texts.CONFIRM = "确定"
     texts.CANCEL = "取消"
 
-    -- 面板设定
+    -- 面板設定
     texts.CAT_PANEL = "面板设定"
     texts.PANEL_SECTION_SIZE = "外观"
     texts.PANEL_SECTION_PAGES = "页面"
@@ -156,6 +158,8 @@ else
     texts.GARDENBOSS = "Garden"
     texts.YNYSWORD = "YNY"
     texts.CINDERSWORD = "Cinder"
+    texts.IPNYSH_DAILY = "Ipnysh"
+    texts.TREE_MAMMOTH = "Mammoth + Tree"
 
     -- Daily challenges
     texts.CAT_CHALLENGE = "Challenges"
