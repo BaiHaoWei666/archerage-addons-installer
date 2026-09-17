@@ -246,7 +246,7 @@ local function OnRowClick(self, doubleClick)
     end
     if Items.CanExpand(key, Items.NewContext()) then
         expanded[key] = not expanded[key] or nil
-        Popout.Refresh()
+        Popout.Refresh(expanded[key] and key or nil)
     elseif doubleClick and Items.CanActivate(key) then
         ITV2.SquadConfirm.Show(key)
     end
@@ -344,7 +344,7 @@ end
 -- ============================================
 -- 排版与刷新
 -- ============================================
-local function Layout(cat)
+local function Layout(cat, revealKey)
     local ctx = Items.NewContext()
     local rowHeight = RowHeight()
     local subRowHeight = SubRowHeight()
@@ -352,6 +352,7 @@ local function Layout(cat)
     local shown = 0
     local subShown = 0
     local y = 0
+    local revealTop, revealBottom
     for _, key in ipairs(S.orderByCat[cat.key]) do
         if cat.fixed or S.IsTracked(key) then
             shown = shown + 1
@@ -362,6 +363,7 @@ local function Layout(cat)
             if isExpanded then
                 text = text .. " [-]"
             end
+            if key == revealKey then revealTop = y end
             local label = rows[shown]
             label.itemKey = key
             UI.SetStatusText(label, text, view.status)
@@ -379,6 +381,7 @@ local function Layout(cat)
                     area:Place(sub, SUB_INDENT, y, subRowHeight)
                     y = y + subRowHeight
                 end
+                if key == revealKey then revealBottom = y end
                 y = y + EXPANDED_GAP
             end
         end
@@ -396,15 +399,21 @@ local function Layout(cat)
     else
         emptyHint:Show(false)
     end
-    return y
+    return y, revealTop, revealBottom
 end
 
-function Popout.Refresh()
+function Popout.Refresh(revealKey)
     local cat = CATEGORIES[S.popoutPage]
     title:SetText(T(cat.label))
     prevButton:Enable(S.NextEnabledPage(S.popoutPage, -1) ~= S.popoutPage)
     nextButton:Enable(S.NextEnabledPage(S.popoutPage, 1) ~= S.popoutPage)
-    if area:SetContentHeight(Layout(cat)) then
+    local height, revealTop, revealBottom = Layout(cat, revealKey)
+    local repositioned = area:SetContentHeight(height)
+    -- 只在主動展開時顯示新內容；定期刷新與收起不搶走捲動位置。
+    if revealTop ~= nil and revealBottom ~= nil then
+        repositioned = area:RevealRange(revealTop, revealBottom) or repositioned
+    end
+    if repositioned then
         Layout(cat)
     end
     UpdateBarVisible()

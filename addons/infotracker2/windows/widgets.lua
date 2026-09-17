@@ -379,6 +379,7 @@ function UI.CreateScrollArea(parent, id, onScroll)
         local scrollable = max > 0
         local clamped = false
         self.scrollable = scrollable
+        self.maxOffset = max
         self.updating = true
         slider:SetMinMaxValues(0, max)
         if self.offset > max then
@@ -392,6 +393,24 @@ function UI.CreateScrollArea(parent, id, onScroll)
         thumb:Show(scrollable)
         sliderBg:SetTextureColor(scrollable and "default" or "disable")
         return clamped
+    end
+
+    -- 更新內容高度後呼叫：以最小捲動量顯示區段；超過一頁時對齊區段頂端。
+    -- 回傳位置是否改變，呼叫端需據此重新排版。
+    function area:RevealRange(top, bottom)
+        local target = self.offset
+        if top < target or bottom - top > self.viewHeight then
+            target = top
+        elseif bottom > target + self.viewHeight then
+            target = bottom - self.viewHeight
+        end
+        target = math.max(0, math.min(target, self.maxOffset or 0))
+        if target == self.offset then return false end
+        self.updating = true
+        self.offset = target
+        slider:SetValue(target, false)
+        self.updating = false
+        return true
     end
 
     function area:ScrollToTop()
