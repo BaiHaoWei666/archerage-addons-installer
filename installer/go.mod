@@ -1,4 +1,4 @@
-module github.com/BaiHaoWei666/archerage-addons/installer
+module github.com/BaiHaoWei666/archerage-addons-installer/installer
 
 go 1.26.0
 

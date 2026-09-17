@@ -2,6 +2,8 @@
 
 給親友用的 ArcheRage 插件安裝與更新工具。單一 exe，不用安裝。
 
+私人倉庫：[BaiHaoWei666/archerage-addons-installer](https://github.com/BaiHaoWei666/archerage-addons-installer)。
+
 Go + Wails 版 Windows x64 exe 實測約 16.5 MiB（17.3 MB），包含 Logo、網頁介面與 Noto Sans TC 字型，不需要 .NET。
 
 目前收錄的插件：

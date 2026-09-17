@@ -23,7 +23,7 @@ const (
 	appName    = "ArcheRage Addon Installer"
 	appDirName = "ArcheRageAddonInstaller"
 	exeName    = "ArcheRageAddonInstaller.exe"
-	repo       = "BaiHaoWei666/archerage-addons"
+	repo       = "BaiHaoWei666/archerage-addons-installer"
 )
 
 func main() {
