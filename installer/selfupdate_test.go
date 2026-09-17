@@ -5,11 +5,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 )
 
-// Runs in a disposable copy of this test executable, never the installed app.
+// 僅在拋棄式測試執行檔中執行，不修改已安裝的程式。
 func TestSelfUpdateHelper(t *testing.T) {
 	mode := os.Getenv("AR_TEST_SELF_MODE")
 	if mode == "" {
@@ -17,6 +18,12 @@ func TestSelfUpdateHelper(t *testing.T) {
 	}
 	dir := os.Getenv("AR_TEST_SELF_DIR")
 	if mode == "new" {
+		if err := waitForUpdateParent(); err != nil {
+			os.Exit(8)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "started.txt"), []byte("ok"), 0600); err != nil {
+			os.Exit(7)
+		}
 		cleanupOldVersion()
 		for i := 0; i < 50; i++ {
 			if _, err := os.Stat(filepath.Join(dir, "app.old.exe")); os.IsNotExist(err) {
@@ -40,6 +47,11 @@ func TestSelfUpdateHelper(t *testing.T) {
 	}
 	if err != nil {
 		os.Exit(5)
+	}
+	// 模擬舊視窗尚在結束，這段期間新版不可開始初始化 UI。
+	time.Sleep(800 * time.Millisecond)
+	if _, err := os.Stat(filepath.Join(dir, "started.txt")); err == nil {
+		os.Exit(6)
 	}
 	os.Exit(0)
 }
@@ -80,11 +92,11 @@ func TestSelfUpdateRestartAndRollback(t *testing.T) {
 					time.Sleep(100 * time.Millisecond)
 				}
 				if _, err := os.Stat(filepath.Join(dir, "restarted.txt")); err != nil {
-					t.Fatal("new process did not restart")
+					t.Fatal("新版程序未重新啟動")
 				}
 			}
 			if _, err := os.Stat(filepath.Join(dir, "app.old.exe")); !os.IsNotExist(err) {
-				t.Fatal("old exe remains")
+				t.Fatal("舊版執行檔未清除")
 			}
 			got, err := os.Stat(app)
 			if err != nil {
@@ -92,8 +104,24 @@ func TestSelfUpdateRestartAndRollback(t *testing.T) {
 			}
 			want, _ := os.Stat(current)
 			if got.Size() != want.Size() {
-				t.Fatal("executable not preserved")
+				t.Fatal("執行檔未正確保留")
 			}
 		})
+	}
+}
+
+func TestWaitForUpdateParentInput(t *testing.T) {
+	t.Setenv(updateParentEnv, "")
+	if err := waitForUpdateParent(); err != nil {
+		t.Fatal(err)
+	}
+	for _, value := range []string{"invalid", "0", "-1", strconv.Itoa(os.Getpid())} {
+		t.Setenv(updateParentEnv, value)
+		if err := waitForUpdateParent(); err == nil {
+			t.Fatalf("應拒絕無效程序編號：%q", value)
+		}
+		if os.Getenv(updateParentEnv) != "" {
+			t.Fatal("交接參數不應繼續傳給其他子程序")
+		}
 	}
 }
