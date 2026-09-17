@@ -1,8 +1,5 @@
--- 特产挑战：挑战 → 特产配方 → 制作材料，以及双击材料时的拍卖场查询
--- 任务目标文字的原始内容是「制作@ITEM_NAME(31844)。……」（画面显示时才换成物品名称），
--- 用里面的物品编号对应特产配方的产品编号，与语系无关。
--- 目标文字只有任务在日志里（进行中）才读得到；对到后本次登入会记住。
-ADDON:ImportAPI(API_TYPE.QUEST.id)
+-- 特產挑戰：挑戰 → 特產配方 → 製作材料，以及雙擊材料時的拍賣場查詢
+-- 所有任務狀態統一依名稱比對；配方名稱索引與材料資料保留記憶體快取。
 ADDON:ImportAPI(API_TYPE.CRAFT.id)
 ADDON:ImportAPI(API_TYPE.AUCTION.id)
 
@@ -12,77 +9,64 @@ local Util = ITV2.SourceUtil
 local Specialty = {}
 ITV2.Specialty = Specialty
 
--- 拍卖场刚打开时可能会自己重设查询，所以等一下再送出
+-- 拍賣場剛打開時可能會自己重設查詢，所以等一下再送出
 local AUCTION_SEARCH_DELAY_MS = 300
 
-local craftByProduct = nil   -- { [产品物品编号] = 配方编号 }
-local craftByQuest = {}      -- { [questType] = 配方编号 | false（不是特产） }
-local materialCache = {}     -- { [配方编号] = { { name, itemType, amount }, ... } }
+local craftByName = nil      -- { [產品名稱] = 配方編號 | false（同名配方有歧義） }
+local materialCache = {}     -- { [配方編號] = { { name, itemType, amount }, ... } }
 local pendingSearch = nil    -- { name, wait }
 
-local function GetCraftByProduct()
-    if craftByProduct ~= nil then
-        return craftByProduct
-    end
-    local map = {}
-    local found = false
+local function GetCraftByName(ctx)
+    if craftByName ~= nil then return craftByName end
+    if ctx.specialtyNames ~= nil then return ctx.specialtyNames end
+    local names = {}
+    local complete = true
     for _, craftType in ipairs(ITV2.SPECIALTY_CRAFTS) do
         local products = X2Craft:GetCraftProductInfo(craftType)
         local product = type(products) == "table" and products[1] or nil
-        local itemType = product ~= nil and tonumber(product.itemType) or nil
-        if itemType ~= nil then
-            map[itemType] = craftType
-            found = true
+        local name = product and (product.item_name or product.name)
+        if type(name) == "string" and name ~= "" then
+            if names[name] == nil then
+                names[name] = craftType
+            elseif names[name] ~= craftType then
+                names[name] = false
+            end
+        else
+            complete = false
         end
     end
-    -- 一个都读不到（例如还没进入世界）就下次再读
-    if found then
-        craftByProduct = map
-    end
-    return map
+    -- 未齊的資料僅於本次重新整理重用，下次重試，避免永久漏掉配方。
+    ctx.specialtyNames = names
+    if complete and next(names) ~= nil then craftByName = names end
+    return names
 end
 
--- 回传：配方编号；目标文字读到了但不是特产回传 false；读不到回传 nil
-local function FindCraft(questType, ctx)
-    local journal = Util.GetJournalIndexMap(ctx)[questType]
-    if journal == nil then
-        return nil
-    end
-    local objective = X2Quest:GetQuestJournalObjectiveText(journal, 1)
-    local summary = type(objective) == "table" and objective.summary or objective
-    if type(summary) ~= "string" or summary == "" then
-        return nil
-    end
-    local crafts = GetCraftByProduct()
-    for itemType in string.gmatch(summary, "@ITEM_NAME%((%d+)%)") do
-        local craftType = crafts[tonumber(itemType)]
-        if craftType ~= nil then
-            return craftType
-        end
-    end
-    return false
-end
-
--- 挑战对应的特产配方编号；不是特产或还读不到回传 nil
+-- 任務名稱先完整比對；中文再依地區簡稱與特產種類找唯一配方。
 function Specialty.GetCraft(questType, ctx)
-    local craftType = craftByQuest[questType]
-    if craftType == nil then
-        -- 同一次刷新里查过就不再查
-        ctx.specialtyChecked = ctx.specialtyChecked or {}
-        if ctx.specialtyChecked[questType] then
-            return nil
-        end
-        ctx.specialtyChecked[questType] = true
-        craftType = FindCraft(questType, ctx)
-        -- 配方对照表还没读到时，false 可能是误判，不记住
-        if craftType ~= nil and craftByProduct ~= nil then
-            craftByQuest[questType] = craftType
+    local title = Util.GetQuestTitle(questType)
+    local productTitle = title and string.match(title, "^%[[^%]]+%]%s*(.+)$")
+    if productTitle == nil then return nil end
+    local names = GetCraftByName(ctx)
+    if names[productTitle] ~= nil then return names[productTitle] or nil end
+    -- 任務為「地區的種類」，產品為「[地區簡稱]種類」。
+    -- 地區簡稱須為任務地區的前綴，種類完全相同，多個候選時不選擇。
+    local region, kind = string.match(productTitle, "^(.-)的(.+)$")
+    if region == nil or region == "" then return nil end
+    local candidate = nil
+    for name, craftType in pairs(names) do
+        local productRegion, productKind = string.match(name, "^%[([^%]]+)%]%s*(.+)$")
+        if productRegion and productKind == kind
+            and string.sub(region, 1, #productRegion) == productRegion then
+            if craftType == false or (candidate ~= nil and candidate ~= craftType) then
+                return nil
+            end
+            candidate = craftType
         end
     end
-    return craftType or nil
+    return candidate
 end
 
--- 配方的材料清单（配方资料不会变，读到后就记住）
+-- 配方的材料清單（配方資料不會變，讀到後就記住）
 function Specialty.GetMaterials(craftType)
     local cached = materialCache[craftType]
     if cached ~= nil then
@@ -110,7 +94,7 @@ function Specialty.CanSearchAuction(material)
     return material.itemType == nil or not ITV2.AUCTION_EXCLUDED_ITEMS[material.itemType]
 end
 
--- 打开拍卖场，稍后用名称送出查询（见 Tick）
+-- 打開拍賣場，稍後用名稱送出查詢（見 Tick）
 function Specialty.SearchAuction(name)
     local ok, err = pcall(function()
         ADDON:ShowContent(UIC_AUCTION, true)
@@ -131,7 +115,7 @@ function Specialty.Tick(dt)
     end
     local name = pendingSearch.name
     pendingSearch = nil
-    -- 参数：页数、最低等级、最高等级、品质、分类、完全符合、关键字、最低价、最高价（同 Folio105）
+    -- 參數：頁數、最低等級、最高等級、品質、分類、完全符合、關鍵字、最低價、最高價（同 Folio105）
     local ok, err = pcall(function()
         X2Auction:SearchAuctionArticle(1, 0, 999, 1, 0, false, name, "0", "0")
     end)

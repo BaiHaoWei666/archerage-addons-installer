@@ -1,12 +1,12 @@
--- 每日挑战（活动中心；X2Achievement 的 TADT_TODAY）
--- 实测回传：
---   GetTodayAssignmentStatus()          -> 已完成数, 总数        （画面「任务完成 1/7」）
---   GetTodayAssignmentResetCount(type)  -> 已更换次数, 上限      （画面「更换任务次数 0/3」）
+-- 每日挑戰（活動中心；X2Achievement 的 TADT_TODAY）
+-- 實測回傳：
+--   GetTodayAssignmentStatus()          -> 已完成數, 總數        （畫面「任務完成 1/7」）
+--   GetTodayAssignmentResetCount(type)  -> 已更換次數, 上限      （畫面「更換任務次數 0/3」）
 --   GetTodayAssignmentInfo(type, i)     -> { status, questType, title, desc, ... }
---     status：1 未开启、2 进行中、3 已完成
---     title 是这一格的分类名称，画面上的名称要用 questType 查任务名
--- 任务日志的目标（GetQuestJournalObjectiveText）只有 status、done（已完成数）、summary，没有目标数
--- 特产挑战可以展开制作材料，见 sources/specialty.lua
+--     status：1 未開啟、2 進行中、3 已完成
+--     title 是這一格的分類名稱，畫面上的名稱要用 questType 查任務名
+-- 任務日誌的目標（GetQuestJournalObjectiveText）只有 status、done（已完成數）、summary，沒有目標數
+-- 特產挑戰可以展開製作材料，見 sources/specialty.lua
 ADDON:ImportAPI(API_TYPE.ACHIEVEMENT.id)
 
 local T = ITV2.Text
@@ -38,12 +38,12 @@ end
 ITV2.SOURCES.assignment = {
     expandable = true,
 
-    -- 只有特产挑战能展开
+    -- 只有特產挑戰能展開
     CanExpand = function(item, ctx)
         return GetSpecialtyCraft(item, ctx) ~= nil
     end,
 
-    -- 特产挑战：制作材料「材料名 x数量」，双击到拍卖场查询（非卖品除外）
+    -- 特產挑戰：製作材料「材料名 x數量」，雙擊到拍賣場查詢（非賣品除外）
     Children = function(item, ctx)
         local out = {}
         local craftType = GetSpecialtyCraft(item, ctx)
@@ -74,9 +74,9 @@ ITV2.SOURCES.assignment = {
             return { text = fallback, status = "neutral" }
         end
         local text = (info.questType and Util.GetQuestTitle(info.questType)) or info.title or fallback
-        -- 悬浮窗空间小：特产挑战去掉开头的分类标志「[特产-东部] 」
+        -- 懸浮窗空間小：特產挑戰移除開頭分類前綴
         local shortText = nil
-        if GetSpecialtyCraft(item, ctx) ~= nil then
+        if string.find(text, "^%[特产%-") ~= nil or GetSpecialtyCraft(item, ctx) ~= nil then
             shortText = string.gsub(text, "^%[[^%]]*%]%s*", "")
         end
         return {
