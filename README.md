@@ -2,6 +2,8 @@
 
 給親友用的 ArcheRage 插件安裝與更新工具。單一 exe，不用安裝。
 
+語言規則：僅遊戲內實際顯示的文字使用簡體中文；其餘介面、文件與開發溝通一律使用繁體中文，後續碰到不符合規則的文字時一併修正。完整規則見 [AGENTS.md](AGENTS.md)。第三方授權條款保留原文。
+
 私人倉庫：[BaiHaoWei666/archerage-addons-installer](https://github.com/BaiHaoWei666/archerage-addons-installer)。
 
 Go + Wails 版 Windows x64 exe 實測約 16.5 MiB（17.3 MB），包含 Logo、網頁介面與 Noto Sans TC 字型，不需要 .NET。
@@ -68,7 +70,7 @@ GitHub Actions 僅使用 GitHub 自動提供的工作流程憑證上傳 Release�
 
 # 4. 提交並打 tag，GitHub Actions 會自動打包並發佈 Release
 git add -A
-git commit -m "Release v1.0.1"
+git commit -m "發佈 v1.0.1"
 git tag v1.0.1
 git push origin main --tags
 ```
