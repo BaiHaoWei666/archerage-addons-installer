@@ -36,7 +36,8 @@ try {
         # Add entries one by one so paths always use '/' (Windows PowerShell 5.1 would write '\')
         $archive = [IO.Compression.ZipFile]::Open($zip, [IO.Compression.ZipArchiveMode]::Create)
         try {
-            foreach ($file in Get-ChildItem $staged -Recurse -File) {
+            # 排除本機 Lua 語言伺服器設定。
+            foreach ($file in Get-ChildItem $staged -Recurse -File | Where-Object Name -ne ".luarc.jsonc") {
                 $entry = $addon.name + '/' + $file.FullName.Substring($staged.Length + 1).Replace('\', '/')
                 [IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $file.FullName, $entry, [IO.Compression.CompressionLevel]::Optimal) | Out-Null
             }
