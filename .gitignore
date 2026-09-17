@@ -1,0 +1,7 @@
+/dist/
+/dist-stage/
+installer/*.syso
+installer/build/bin/
+installer/frontend/wailsjs/
+.vs/
+.vscode/

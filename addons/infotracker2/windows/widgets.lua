@@ -1,0 +1,407 @@
+-- 共用 UI 元件
+-- 游戏皮肤定义：ui/setting/button_style.g、ui/common/default.g（改外观前先查）
+ADDON:ImportObject(OBJECT_TYPE.TEXT_STYLE)
+ADDON:ImportObject(OBJECT_TYPE.BUTTON)
+ADDON:ImportObject(OBJECT_TYPE.DRAWABLE)
+ADDON:ImportObject(OBJECT_TYPE.NINE_PART_DRAWABLE)
+ADDON:ImportObject(OBJECT_TYPE.COLOR_DRAWABLE)
+ADDON:ImportObject(OBJECT_TYPE.WINDOW)
+ADDON:ImportObject(OBJECT_TYPE.LABEL)
+ADDON:ImportObject(OBJECT_TYPE.IMAGE_DRAWABLE)
+ADDON:ImportObject(OBJECT_TYPE.SLIDER)
+ADDON:ImportObject(OBJECT_TYPE.EMPTY_WIDGET)
+ADDON:ImportObject(OBJECT_TYPE.TEXTBOX)
+ADDON:ImportObject(OBJECT_TYPE.CHECK_BUTTON)
+ADDON:ImportAPI(API_TYPE.INPUT.id)
+
+local T = ITV2.Text
+
+local UI = {}
+ITV2.UI = UI
+
+UI.STATUS_COLORS = {
+    notStarted = { 0.85, 0.15, 0.12, 1 },
+    inProgress = { 0.85, 0.40, 0.05, 1 },
+    complete = { 0.20, 0.75, 0.20, 1 },
+    neutral = { 0.90, 0.90, 0.90, 1 },
+}
+
+function UI.StatusColor(status)
+    return UI.STATUS_COLORS[status] or UI.STATUS_COLORS.neutral
+end
+
+-- 小图标按钮（游戏内建样式，固定尺寸，见 ui/setting/button_style.g）
+UI.ICON_PLUS = { style = "plus", width = 20, height = 20 }
+UI.ICON_MINUS = { style = "minus", width = 20, height = 20 }
+UI.ICON_UP = { style = "grid_folder_up_arrow", width = 20, height = 13 }
+UI.ICON_DOWN = { style = "grid_folder_down_arrow", width = 20, height = 13 }
+UI.ICON_GAP = 6
+
+-- 勾选框（贴图见 ui/button/check_button.g）
+UI.CHECK_WIDTH = 18
+UI.CHECK_HEIGHT = 17
+local CHECK_TEXTURE = "ui/button/check_button.dds"
+
+-- 卷轴（外观沿用 manager / autostore）
+UI.SCROLL_BAR_WIDTH = 20
+UI.SCROLL_BAR_GAP = 4
+local SCROLL_TEXTURE = "ui/button/scroll_button.dds"
+local SCROLL_STEP = 40
+
+-- ============================================
+-- 文字、按钮
+-- ============================================
+function UI.SetTextColor(widget, color)
+    if widget == nil or color == nil then
+        return
+    end
+    if widget.style ~= nil and widget.style.SetColor ~= nil then
+        widget.style:SetColor(color[1], color[2], color[3], color[4])
+    end
+    if widget.SetTextColor ~= nil then
+        widget:SetTextColor(color[1], color[2], color[3], color[4])
+    end
+    if widget.SetHighlightTextColor ~= nil then
+        widget:SetHighlightTextColor(color[1], color[2], color[3], color[4])
+    end
+    if widget.SetPushedTextColor ~= nil then
+        widget:SetPushedTextColor(color[1], color[2], color[3], color[4])
+    end
+end
+
+-- fn(self, doubleClick)；右键不动作
+function UI.OnLeftClick(widget, fn)
+    widget:SetHandler("OnClick", function(self, arg, doubleClick)
+        if arg == "RightButton" then
+            return
+        end
+        fn(self, doubleClick == true)
+    end)
+end
+
+function UI.CreateLabel(parent, id, width, height, fontSize)
+    local label = parent:CreateChildWidget("label", id, 0, true)
+    label:SetExtent(width, height)
+    label.style:SetAlign(ALIGN_LEFT)
+    label.style:SetFontSize(fontSize)
+    return label
+end
+
+-- 不能点的棕色说明文字（标题、区段名称等）
+function UI.CreateCaption(parent, id, width, height, fontSize, text)
+    local label = UI.CreateLabel(parent, id, width, height, fontSize)
+    label:EnablePick(false)
+    label.style:SetColorByKey("brown")
+    if text ~= nil then
+        label:SetText(text)
+    end
+    return label
+end
+
+-- 单行文字，超出宽度显示「...」（写法同 manager 的插件名称）
+function UI.CreateEllipsisText(parent, id, fontSize)
+    local box = parent:CreateChildWidget("textbox", id, 0, true)
+    box:SetAutoWordwrap(false)
+    box.style:SetAlign(ALIGN_LEFT)
+    box.style:SetFontSize(fontSize)
+    box.style:SetEllipsis(true)
+    return box
+end
+
+-- textbox 在 SetText 时就定下颜色，之后才改 style 颜色不会重画。
+-- 所以先设颜色再设文字；颜色有变时先清空文字，确保文字没变也会用新颜色重画。
+function UI.SetStatusText(box, text, status)
+    local color = UI.StatusColor(status)
+    if box.itv2Color ~= color then
+        box.itv2Color = color
+        UI.SetTextColor(box, color)
+        box:SetText("")
+    end
+    box:SetText(text)
+end
+
+-- text_default 按钮在 SetText 时会自动改宽度，所以每次改字后都要重设大小
+function UI.SetButtonText(button, text)
+    button:SetText(text)
+    button:SetExtent(button.itv2Width, button.itv2Height)
+end
+
+function UI.SetButtonSize(button, width, height)
+    button.itv2Width = width
+    button.itv2Height = height
+    button:SetExtent(width, height)
+end
+
+function UI.CreateTextButton(parent, id, text, width, height)
+    local button = parent:CreateChildWidget("button", id, 0, true)
+    button:SetStyle("text_default")
+    button:SetAutoResize(false)
+    button.itv2Width = width
+    button.itv2Height = height
+    UI.SetButtonText(button, text)
+    return button
+end
+
+function UI.CreateIconButton(parent, id, icon, fn)
+    local button = parent:CreateChildWidget("button", id, 0, true)
+    button:SetStyle(icon.style)
+    button:SetExtent(icon.width, icon.height)
+    button.itv2Icon = icon
+    UI.OnLeftClick(button, fn)
+    return button
+end
+
+-- 原生 checkbutton（外观同附加组件管理器）
+-- 勾选框会在点击处理之后自己再切换一次，所以 fn(self) 只改资料，画面状态由刷新时的 SetChecked 决定
+function UI.CreateCheckBox(parent, id, fn)
+    local box = parent:CreateChildWidget("checkbutton", id, 0, true)
+    box:SetExtent(UI.CHECK_WIDTH, UI.CHECK_HEIGHT)
+    local skins = {
+        { key = "btn_df", setter = "SetNormalBackground" },
+        { key = "btn_ov", setter = "SetHighlightBackground" },
+        { key = "btn_on", setter = "SetPushedBackground" },
+        { key = "btn_dis", setter = "SetDisabledBackground" },
+        { key = "btn_chk_df", setter = "SetCheckedBackground" },
+        { key = "btn_chk_dis", setter = "SetDisabledCheckedBackground" },
+    }
+    for _, skin in ipairs(skins) do
+        local drawable = box:CreateDrawable(CHECK_TEXTURE, skin.key, "background")
+        drawable:AddAnchor("TOPLEFT", box, 0, 0)
+        drawable:AddAnchor("BOTTOMRIGHT", box, 0, 0)
+        box[skin.setter](box, drawable)
+    end
+    UI.OnLeftClick(box, fn)
+    return box
+end
+
+-- 细项有 action 时才能点，双击才执行，避免误触（例：特产材料 → 拍卖场查询）
+function UI.SetSubRowAction(label, action)
+    label.itv2Action = action
+    label:EnablePick(action ~= nil)
+end
+
+function UI.RunSubRowAction(self, doubleClick)
+    if doubleClick and self.itv2Action ~= nil then
+        pcall(self.itv2Action)
+    end
+end
+
+-- ============================================
+-- 视窗
+-- ============================================
+-- 拖动 handle 时移动 target；canDrag 回传 false 时不动。
+-- 拖动的元件必须自己 StartMoving，叫别的视窗移动不会生效。
+function UI.EnableWindowDrag(handle, target, canDrag, onStop)
+    handle:EnableDrag(true)
+    handle:SetHandler("OnDragStart", function()
+        if canDrag ~= nil and not canDrag() then
+            return
+        end
+        target:StartMoving()
+        target.itv2Moving = true
+        return true
+    end)
+    handle:SetHandler("OnDragStop", function()
+        if not target.itv2Moving then
+            return
+        end
+        target.itv2Moving = false
+        target:StopMovingOrSizing()
+        if onStop ~= nil then
+            onStop(target)
+        end
+    end)
+end
+
+-- 置中、可拖动、Esc 关闭、有底图的对话视窗（预设隐藏）
+function UI.CreateDialog(id, width, height, offsetY)
+    local window = CreateEmptyWindow(id, "UIParent")
+    window:SetCloseOnEscape(true)
+    window:SetExtent(width, height)
+    window:AddAnchor("CENTER", "UIParent", 0, offsetY or 0)
+    window:Show(false)
+    window:Clickable(true)
+    window:SetUILayer("system")
+    UI.EnableWindowDrag(window, window)
+
+    local bg = window:CreateDrawable("ui/common/default.dds", "main_bg", "background")
+    bg:AddAnchor("TOPLEFT", window, -5, -5)
+    bg:AddAnchor("BOTTOMRIGHT", window, 5, 5)
+    return window
+end
+
+-- 读不到 Shift 状态时不要让标题栏变成完全拖不动：先放行，并提示一次
+local shiftWarned = false
+function UI.IsShiftDown()
+    local ok, down = pcall(function()
+        return X2Input:IsShiftKeyDown()
+    end)
+    if ok then
+        return down == true
+    end
+    if not shiftWarned then
+        shiftWarned = true
+        ITV2.Chat(T("SHIFT_UNAVAILABLE"))
+    end
+    return true
+end
+
+function UI.EffectiveToAnchorOffset(value)
+    if F_LAYOUT ~= nil and F_LAYOUT.CalcDontApplyUIScale ~= nil then
+        return F_LAYOUT.CalcDontApplyUIScale(value)
+    end
+    return value / ITV2.GetUiScale()
+end
+
+-- ============================================
+-- 卷动区域
+-- 清单项目放在 area.content 里，用 area:Place() 摆放（y 为清单内座标）。
+-- 自己记录卷动位置并在排版时扣掉，完全超出可视范围的元件直接隐藏，
+-- 所以每次重新排版都不会和卷动位置冲突。
+-- 排版流程：Place 所有元件 → SetContentHeight(总高)，回传 true 时要再排一次。
+-- ============================================
+function UI.CreateScrollArea(parent, id, onScroll)
+    local area = { offset = 0, viewHeight = 0, onScroll = onScroll }
+
+    local content = parent:CreateChildWidget("emptywidget", id .. "Content", 0, true)
+    content:EnableScroll(true)
+    area.content = content
+
+    local bar = parent:CreateChildWidget("emptywidget", id .. "Bar", 0, true)
+    area.bar = bar
+
+    local upButton = bar:CreateChildWidget("button", id .. "Up", 0, true)
+    upButton:SetStyle("slider_scroll_button_up")
+    upButton:SetExtent(UI.SCROLL_BAR_WIDTH, 12)
+    upButton:AddAnchor("TOPRIGHT", bar, 0, 0)
+
+    local downButton = bar:CreateChildWidget("button", id .. "Down", 0, true)
+    downButton:SetStyle("slider_scroll_button_down")
+    downButton:SetExtent(UI.SCROLL_BAR_WIDTH, 12)
+    downButton:AddAnchor("BOTTOMRIGHT", bar, 0, 0)
+
+    local slider = bar:CreateChildWidget("slider", id .. "Slider", 0, true)
+    slider:AddAnchor("TOPLEFT", upButton, "BOTTOMLEFT", 0, 0)
+    slider:AddAnchor("BOTTOMRIGHT", downButton, "TOPRIGHT", 0, 0)
+
+    local sliderBg = slider:CreateDrawable(SCROLL_TEXTURE, "scroll_frame_bg", "background")
+    sliderBg:AddAnchor("TOPLEFT", slider, 3, -9)
+    sliderBg:AddAnchor("BOTTOMRIGHT", slider, -3, 9)
+
+    local thumb = slider:CreateChildWidget("button", id .. "Thumb", 0, true)
+    thumb:SetWidth(UI.SCROLL_BAR_WIDTH)
+    local thumbSkins = {
+        { key = "thumb_df", setter = "SetNormalBackground" },
+        { key = "thumb_ov", setter = "SetHighlightBackground" },
+        { key = "thumb_on", setter = "SetPushedBackground" },
+        { key = "thumb_dis", setter = "SetDisabledBackground" },
+    }
+    for _, skin in ipairs(thumbSkins) do
+        local drawable = thumb:CreateDrawable(SCROLL_TEXTURE, skin.key, "background")
+        drawable:AddAnchor("TOPLEFT", thumb, 0, 0)
+        drawable:AddAnchor("BOTTOMRIGHT", thumb, 0, 0)
+        thumb[skin.setter](thumb, drawable)
+    end
+
+    slider:SetThumbButtonWidget(thumb)
+    slider:SetPageStep(SCROLL_STEP)
+    slider:SetValueStep(SCROLL_STEP)
+    slider:SetFixedThumb(true)
+    slider:SetMinMaxValues(0, 0)
+
+    local function ScrollUp()
+        slider:Up(SCROLL_STEP)
+    end
+    local function ScrollDown()
+        slider:Down(SCROLL_STEP)
+    end
+
+    UI.OnLeftClick(upButton, ScrollUp)
+    UI.OnLeftClick(downButton, ScrollDown)
+
+    slider:SetHandler("OnSliderChanged", function(_, value)
+        value = math.floor(tonumber(value) or 0)
+        if value == area.offset then
+            return
+        end
+        area.offset = value
+        if not area.updating and area.onScroll ~= nil then
+            area.onScroll()
+        end
+    end)
+
+    -- 滑鼠滚轮：清单区与会接走滑鼠的元件都要绑
+    function area:BindWheel(widget)
+        widget:SetHandler("OnWheelUp", ScrollUp)
+        widget:SetHandler("OnWheelDown", ScrollDown)
+    end
+    area:BindWheel(content)
+
+    -- 可视范围（相对 parent）；卷轴贴在清单右边，间距 barGap（预设 SCROLL_BAR_GAP）
+    function area:SetView(x, y, width, height, barGap)
+        self.viewHeight = height
+        content:RemoveAllAnchors()
+        content:AddAnchor("TOPLEFT", parent, x, y)
+        content:SetExtent(width, height)
+        bar:RemoveAllAnchors()
+        bar:AddAnchor("TOPLEFT", parent, x + width + (barGap or UI.SCROLL_BAR_GAP), y)
+        bar:SetExtent(UI.SCROLL_BAR_WIDTH, height)
+    end
+
+    function area:Show(visible)
+        content:Show(visible)
+        bar:Show(visible)
+    end
+
+    -- 完整落在可视范围内才显示
+    function area:Place(widget, x, y, height)
+        local top = y - self.offset
+        if top < 0 or top + height > self.viewHeight then
+            widget:Show(false)
+            return
+        end
+        widget:RemoveAllAnchors()
+        widget:AddAnchor("TOPLEFT", content, x, top)
+        widget:Show(true)
+    end
+
+    -- 图标按钮右缘对齐 right、在行内垂直置中；回传下一个图标可用的右缘（由右往左排）
+    function area:PlaceIcon(button, right, rowY, rowHeight)
+        local icon = button.itv2Icon
+        local x = right - icon.width
+        self:Place(button, x, rowY + math.floor((rowHeight - icon.height) / 2), icon.height)
+        return x - UI.ICON_GAP
+    end
+
+    -- 排版完后告知清单总高度；卷动位置被夹住时回传 true，呼叫端需要重排一次
+    function area:SetContentHeight(height)
+        local max = math.max(0, height - self.viewHeight)
+        local scrollable = max > 0
+        local clamped = false
+        self.scrollable = scrollable
+        self.updating = true
+        slider:SetMinMaxValues(0, max)
+        if self.offset > max then
+            self.offset = max
+            slider:SetValue(max, false)
+            clamped = true
+        end
+        self.updating = false
+        upButton:Enable(scrollable)
+        downButton:Enable(scrollable)
+        thumb:Show(scrollable)
+        sliderBg:SetTextureColor(scrollable and "default" or "disable")
+        return clamped
+    end
+
+    function area:ScrollToTop()
+        if self.offset ~= 0 then
+            self.updating = true
+            self.offset = 0
+            slider:SetValue(0, false)
+            self.updating = false
+        end
+    end
+
+    return area
+end

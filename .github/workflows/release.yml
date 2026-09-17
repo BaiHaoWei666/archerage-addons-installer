@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: installer/go.mod
+          cache-dependency-path: installer/go.sum
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
+
+      - name: Build
+        shell: pwsh
+        run: ./scripts/build-release.ps1
+
+      - name: Test
+        working-directory: installer
+        run: |
+          go test ./...
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          go vet ./...
+
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = (Get-ChildItem dist).FullName
+          gh release create "${{ github.ref_name }}" @files --title "${{ github.ref_name }}" --generate-notes

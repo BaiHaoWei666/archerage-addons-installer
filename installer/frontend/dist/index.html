@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+  <title>ArcheRage Addon Installer</title>
+  <link rel="stylesheet" href="fonts/noto-sans-tc.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div class="app">
+    <nav class="sidebar">
+      <div class="logo" data-icon="logo"></div>
+      <div class="nav-sep"></div>
+      <button class="nav-btn" data-act="nav" data-view="browse" title="瀏覽">
+        <span data-icon="hex"></span>
+      </button>
+      <button class="nav-btn" data-act="nav" data-view="installed" title="已安裝">
+        <span data-icon="download"></span>
+        <span class="badge" id="updateBadge" hidden></span>
+      </button>
+      <div class="nav-spacer"></div>
+      <button class="nav-btn" data-act="nav" data-view="settings" title="設定">
+        <span data-icon="gear"></span>
+        <span class="badge" id="selfBadge" hidden>1</span>
+      </button>
+      <div class="app-version" id="appVersion"></div>
+    </nav>
+
+    <section class="list-pane" id="listPane">
+      <header class="pane-head">
+        <div>
+          <h1 id="listTitle">瀏覽</h1>
+          <div class="sub" id="listSub"></div>
+        </div>
+        <div class="head-actions">
+          <button class="icon-btn" data-act="openDir" title="開啟插件資料夾"><span data-icon="folder"></span></button>
+          <button class="icon-btn" data-act="refresh" id="refreshBtn" title="重新檢查更新"><span data-icon="refresh"></span></button>
+        </div>
+      </header>
+      <div class="list-tools">
+        <button class="btn primary block" data-act="updateAll" id="updateAllBtn" hidden></button>
+        <label class="search">
+          <span data-icon="search"></span>
+          <input id="search" type="search" placeholder="搜尋插件…" autocomplete="off" spellcheck="false">
+        </label>
+        <div class="filters">
+          <select id="category"><option value="">全部分類</option></select>
+          <select id="sort">
+            <option value="updated">最近更新</option>
+            <option value="name">名稱</option>
+            <option value="status">可更新優先</option>
+          </select>
+        </div>
+      </div>
+      <div class="list" id="list"></div>
+    </section>
+
+    <section class="detail-pane" id="detailPane"></section>
+    <section class="settings-pane" id="settingsPane" hidden></section>
+  </div>
+
+  <div class="busy" id="busy" hidden>
+    <span class="spinner"></span>
+    <div class="busy-main">
+      <span id="busyText"></span>
+      <div class="bar"><div id="busyBar"></div></div>
+    </div>
+  </div>
+  <div class="toasts" id="toasts"></div>
+
+  <div class="modal-backdrop" id="modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h2 id="modalTitle"></h2>
+      <p id="modalText"></p>
+      <div class="modal-actions">
+        <button class="btn ghost" id="modalCancel">取消</button>
+        <button class="btn primary" id="modalOk">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

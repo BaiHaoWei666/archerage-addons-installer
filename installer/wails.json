@@ -1,0 +1,19 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "ArcheRage Addon Installer",
+  "outputfilename": "ArcheRageAddonInstaller",
+  "frontend:install": "",
+  "frontend:build": "",
+  "frontend:dev:watcher": "",
+  "frontend:dev:serverUrl": "",
+  "author": {
+    "name": "BaiHaoWei666"
+  },
+  "info": {
+    "companyName": "",
+    "productName": "ArcheRage Addon Installer",
+    "productVersion": "1.0.0",
+    "copyright": "",
+    "comments": "ArcheRage 插件安裝與更新工具"
+  }
+}
