@@ -33,9 +33,9 @@ func TestPrivateReleaseDownload(t *testing.T) {
 		if r.URL.Host != "api.github.com" || r.Header.Get("Authorization") != "Bearer test-token" {
 			t.Fatal("missing scoped API auth")
 		}
-		body := `{"assets":[{"name":"manifest.json","url":"https://api.github.com/repos/` + repo + `/releases/assets/1"}]}`
-		if strings.HasSuffix(r.URL.Path, "/assets/1") {
-			if r.Header.Get("Accept") != "application/octet-stream" {
+		body := `{"tag_name":"v1.0.2","assets":[{"name":"ArcheRageAddonInstaller.exe","url":"https://api.github.com/repos/` + repo + `/releases/assets/1"}]}`
+		if strings.HasSuffix(r.URL.Path, "/contents/catalog/manifest.json") {
+			if r.Header.Get("Accept") != "application/vnd.github.raw+json" || r.URL.Query().Get("ref") != "v1.0.2" {
 				t.Fatal("asset download accept header")
 			}
 			body = `{"installer":{"version":"1.0.0"},"addons":[{"name":"demo","version":"1.0.0"}]}`
@@ -45,6 +45,16 @@ func TestPrivateReleaseDownload(t *testing.T) {
 	manifest, err := src.LoadManifest(context.Background())
 	if err != nil || len(manifest.Addons) != 1 || calls != 2 {
 		t.Fatalf("private manifest: %v calls=%d", err, calls)
+	}
+	assetURL, err := src.assetURL(context.Background(), exeName)
+	if err != nil || !strings.HasSuffix(assetURL, "/assets/1") {
+		t.Fatal("self-update must use release exe")
+	}
+	for _, name := range []string{"demo.zip", "demo.png", "demo.md"} {
+		fileURL, err := src.assetURL(context.Background(), name)
+		if err != nil || !strings.Contains(fileURL, "/contents/catalog/"+name+"?ref=v1.0.2") {
+			t.Fatal("catalog path not pinned to release")
+		}
 	}
 }
 

@@ -62,7 +62,7 @@ GitHub Actions 僅使用 GitHub 自動提供的工作流程憑證上傳 Release�
 # 2. 修改 manifest.json：調高有變動的插件 version，並在 changelog 最前面加一筆紀錄
 #    （要更新安裝工具本身時，調高 installer.version）
 
-# 3.（可選）本機打包測試，產生 dist/；--addon-dir 可指定測試用的插件資料夾
+# 3. 必須先打包，產生 dist/ 與要一起提交的 catalog/；只準備插件可加 -SkipInstaller
 ./scripts/build-release.ps1
 ./dist/ArcheRageAddonInstaller.exe --source dist --addon-dir D:\test-addon
 
@@ -73,7 +73,8 @@ git tag v1.0.1
 git push origin main --tags
 ```
 
-tag 名稱只用來命名 Release；程式實際比對的是 `manifest.json` 裡的版本號。
+程式依 latest Release 的 tag 讀取該版本的 catalog/，不會讀到 main 尚未發佈的修改。
+發佈前務必提交 catalog/；程式比對其中 manifest.json 的版本號。
 
 ### 新增插件
 
@@ -102,6 +103,7 @@ tag 名稱只用來命名 Release；程式實際比對的是 `manifest.json` 裡
 ```
 addons/                 插件原始檔（由 sync-addons.ps1 同步）
 meta/                   插件圖示
+catalog/                已打包的插件、清單、圖示與說明（隨版本提交，不上傳 Release）
 manifest.json           插件清單、版本號、分類、更新紀錄
 scripts/
   sync-addons.ps1       從遊戲資料夾同步插件
@@ -115,17 +117,19 @@ installer/              安裝工具（Go + Wails v2，介面用系統的 WebVie
 
 ### 運作方式
 
-使用者貼上權杖後，程式透過 GitHub API 讀取最新 Release 的附件。
+使用者貼上權杖後，程式透過 GitHub API 取得最新 Release 的 tag，再讀取私人倉庫該 tag 的 catalog/。
+只有安裝工具自己的 exe 從 Release 下載。Release 頁面只列出 exe 與 GitHub 自動產生的 Source code。
 沒有權杖時顯示設定指引；只有明確指定 `--source` 的本機／自訂來源測試不需要權杖。
 
-| 附件 | 用途 |
+| 倉庫 catalog/ 檔案 | 用途 |
 |---|---|
 | `manifest.json` | 插件清單與版本 |
 | `插件名.zip` | 插件本體（內含發佈時產生的 `version.txt`） |
 | `插件名.png` / `插件名.md` | 圖示與說明，安裝前就能顯示 |
-| `ArcheRageAddonInstaller.exe` | 安裝工具本身 |
 
 本機版本讀自每個插件資料夾裡的 `version.txt`。
+
+v1.0.1 及更早版本使用舊的 Release 附件格式；移除舊附件後，請手動下載 v1.0.2 或更新的 exe。原有加密 token 設定可沿用。
 
 ### 第三方元件
 

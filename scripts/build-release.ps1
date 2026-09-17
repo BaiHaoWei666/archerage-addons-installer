@@ -56,6 +56,13 @@ try {
 
     Copy-Item (Join-Path $root 'manifest.json') $dist
 
+    # Commit this catalog before tagging; the app reads it at the release tag.
+    $catalog = Join-Path $root 'catalog'
+    New-Item -ItemType Directory -Path $catalog -Force | Out-Null
+    Get-ChildItem $dist -File | Where-Object Extension -ne '.exe' | ForEach-Object {
+        Copy-Item -LiteralPath $_.FullName -Destination $catalog -Force
+    }
+
     if (-not $SkipInstaller) {
         $version = $manifest.installer.version
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,9 +26,10 @@ type ReleaseSource struct {
 	token    func() string
 	client   *http.Client
 
-	mu     sync.Mutex
-	assets map[string]string // 附件名稱 → API 下載網址（權杖模式）
-	files  map[string][]byte // 小檔案快取；nil 代表找不到
+	mu         sync.Mutex
+	assets     map[string]string // 附件名稱 → API 下載網址（權杖模式）
+	releaseTag string
+	files      map[string][]byte // 小檔案快取；nil 代表找不到
 }
 
 type httpError struct {
@@ -75,6 +77,7 @@ func (s *ReleaseSource) useAPI() bool {
 func (s *ReleaseSource) LoadManifest(ctx context.Context) (*Manifest, error) {
 	s.mu.Lock()
 	s.assets = nil
+	s.releaseTag = ""
 	s.files = map[string][]byte{}
 	s.mu.Unlock()
 
@@ -186,13 +189,18 @@ func (s *ReleaseSource) open(ctx context.Context, name string) (io.ReadCloser, i
 	if err != nil {
 		return nil, 0, err
 	}
-	return s.get(ctx, url, name, "application/octet-stream")
+	accept := "application/octet-stream"
+	if name != exeName {
+		accept = "application/vnd.github.raw+json"
+	}
+	return s.get(ctx, url, name, accept)
 }
 
 // assetURL 從最新 Release 的附件清單找出檔案的 API 網址。
 func (s *ReleaseSource) assetURL(ctx context.Context, name string) (string, error) {
 	s.mu.Lock()
 	assets := s.assets
+	tag := s.releaseTag
 	s.mu.Unlock()
 
 	if assets == nil {
@@ -202,7 +210,8 @@ func (s *ReleaseSource) assetURL(ctx context.Context, name string) (string, erro
 		}
 		defer body.Close()
 		var release struct {
-			Assets []struct {
+			TagName string `json:"tag_name"`
+			Assets  []struct {
 				Name string `json:"name"`
 				URL  string `json:"url"`
 			} `json:"assets"`
@@ -211,14 +220,25 @@ func (s *ReleaseSource) assetURL(ctx context.Context, name string) (string, erro
 			return "", fmt.Errorf("GitHub 回應格式錯誤：%w", err)
 		}
 		assets = map[string]string{}
+		tag = release.TagName
+		if tag == "" {
+			return "", fmt.Errorf("GitHub Release 缺少版本標籤")
+		}
 		for _, a := range release.Assets {
 			assets[a.Name] = a.URL
 		}
 		s.mu.Lock()
 		s.assets = assets
+		s.releaseTag = tag
 		s.mu.Unlock()
 	}
 
+	if name != exeName {
+		if !safeName(name) {
+			return "", fmt.Errorf("Invalid catalog filename")
+		}
+		return "https://api.github.com/repos/" + repo + "/contents/catalog/" + url.PathEscape(name) + "?ref=" + url.QueryEscape(tag), nil
+	}
 	url, ok := assets[name]
 	if !ok {
 		return "", fmt.Errorf("%w：%s", errAssetNotFound, name)

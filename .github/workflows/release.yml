@@ -23,7 +23,9 @@ jobs:
 
       - name: Build
         shell: pwsh
-        run: ./scripts/build-release.ps1
+        run: |
+          if ((Get-Content catalog/manifest.json -Raw | ConvertFrom-Json | ConvertTo-Json -Depth 20 -Compress) -ne (Get-Content manifest.json -Raw | ConvertFrom-Json | ConvertTo-Json -Depth 20 -Compress)) { throw 'Run build-release.ps1 and commit catalog before tagging.' }
+          ./scripts/build-release.ps1
 
       - name: Test
         working-directory: installer
@@ -37,5 +39,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $files = (Get-ChildItem dist).FullName
-          gh release create "${{ github.ref_name }}" @files --title "${{ github.ref_name }}" --generate-notes
+          gh release create "${{ github.ref_name }}" dist/ArcheRageAddonInstaller.exe --title "${{ github.ref_name }}" --generate-notes
