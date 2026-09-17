@@ -57,22 +57,29 @@ GitHub Actions 僅使用 GitHub 自動提供的工作流程憑證上傳 Release�
 
 ### 發佈新版本
 
+先完成插件的版本、更新紀錄與 catalog 封裝，獨立提交並推送；安裝器 release 另行處理，規則見 [AGENTS.md](AGENTS.md#發布分流)。
+
 ```powershell
-# 1. 從遊戲的 Addon 資料夾同步插件到 addons/
-./scripts/sync-addons.ps1
+# 插件收尾：修改有變動的插件版本與更新紀錄，安裝器版本維持原值。
+# 開發資料夾已使用 Junction 時直接修改 addons/，不執行同步腳本。
+./scripts/build-release.ps1 -SkipInstaller
+./scripts/test.ps1
+# 僅暫存本次插件、測試、manifest 與相關 catalog 檔案。
+git commit -m "chore(infotracker2): bump version to X.Y.Z"
+git push origin main
+```
 
-# 2. 修改 manifest.json：調高有變動的插件 version，並在 changelog 最前面加一筆紀錄
-#    （要更新安裝工具本身時，調高 installer.version）
+使用者另行要求發布安裝器後，才調高 `installer.version`，執行以下流程：
 
-# 3. 必須先打包，產生 dist/ 與要一起提交的 catalog/；只準備插件可加 -SkipInstaller
+```powershell
 ./scripts/build-release.ps1
-./dist/ArcheRageAddonInstaller.exe --source dist --addon-dir D:\test-addon
-
-# 4. 提交並打 tag，GitHub Actions 會自動打包並發佈 Release
-git add -A
-git commit -m "發佈 v1.0.1"
-git tag v1.0.1
-git push origin main --tags
+./scripts/test.ps1
+# 僅暫存安裝器版本及相關發布資料，獨立提交。
+git commit -m "chore(installer): bump version to X.Y.Z"
+git push origin main
+# 使用本次安裝器版本建立單一 tag，另一次推送觸發 release workflow。
+git tag vX.Y.Z
+git push origin refs/tags/vX.Y.Z
 ```
 
 程式依 latest Release 的 tag 讀取該版本的 catalog/，不會讀到 main 尚未發佈的修改。

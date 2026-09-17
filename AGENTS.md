@@ -14,7 +14,16 @@
 
 # Git commit 規範
 
-- 提交標題格式為 `type: 繁體中文摘要`；需要標示範圍時使用 `type(scope): 繁體中文摘要`。
+- 一般提交標題格式為 `type: 繁體中文摘要`；需要標示範圍時使用 `type(scope): 繁體中文摘要`。版本提交使用下列固定英文格式，作為語言規則的例外。
+- 插件版本提交固定為 `chore(<插件資料夾名稱>): bump version to <版本號>`，例如 `chore(infotracker2): bump version to 1.0.1`。
+- 安裝器版本提交固定為 `chore(installer): bump version to <版本號>`，例如 `chore(installer): bump version to 1.0.4`。版本號不加 `v`，不附加其他摘要；release tag 使用 `v<版本號>`。
 - 前綴使用小寫：`feat`（新增功能）、`fix`（修正錯誤）、`doc`（文件與 skill）、`chore`（維護與工具設定）、`refactor`（重構）、`test`（測試）、`perf`（效能）、`style`（格式）、`build`（建置）、`ci`（持續整合）、`revert`（還原）。
 - 摘要直接描述變更；不同目的的變更分開提交。
 - 範例：`feat(infotracker2): 新增每日任務追蹤`、`doc: 更新插件開發流程`、`chore: 調整開發工具設定`。
+
+# 發布分流
+
+- 插件先收尾：程式、測試、插件版本、更新紀錄與 catalog 封裝完成後獨立提交；插件提交維持安裝器版本，不新增 release tag。
+- 「獨立推送」指分開執行 push，沿用同一分支，不要求另建分支。
+- 安裝器 release（新增 tag）另作獨立提交與獨立推送，與插件收尾分開處理；只在使用者明確要求發布安裝器時執行。
+- 推送時明列目標分支或單一 tag，不使用 `--tags` 夾帶其他標籤。操作順序見 [README.md 的發布流程](README.md#發佈新版本)。
