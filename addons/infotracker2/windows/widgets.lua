@@ -1,5 +1,5 @@
 -- 共用 UI 元件
--- 游戏皮肤定义：ui/setting/button_style.g、ui/common/default.g（改外观前先查）
+-- 遊戲皮膚定義：ui/setting/button_style.g、ui/common/default.g（改外觀前先查）
 ADDON:ImportObject(OBJECT_TYPE.TEXT_STYLE)
 ADDON:ImportObject(OBJECT_TYPE.BUTTON)
 ADDON:ImportObject(OBJECT_TYPE.DRAWABLE)
@@ -30,26 +30,26 @@ function UI.StatusColor(status)
     return UI.STATUS_COLORS[status] or UI.STATUS_COLORS.neutral
 end
 
--- 小图标按钮（游戏内建样式，固定尺寸，见 ui/setting/button_style.g）
+-- 小圖標按鈕（遊戲內建樣式，固定尺寸，見 ui/setting/button_style.g）
 UI.ICON_PLUS = { style = "plus", width = 20, height = 20 }
 UI.ICON_MINUS = { style = "minus", width = 20, height = 20 }
 UI.ICON_UP = { style = "grid_folder_up_arrow", width = 20, height = 13 }
 UI.ICON_DOWN = { style = "grid_folder_down_arrow", width = 20, height = 13 }
 UI.ICON_GAP = 6
 
--- 勾选框（贴图见 ui/button/check_button.g）
+-- 勾選框（貼圖見 ui/button/check_button.g）
 UI.CHECK_WIDTH = 18
 UI.CHECK_HEIGHT = 17
 local CHECK_TEXTURE = "ui/button/check_button.dds"
 
--- 卷轴（外观沿用 manager / autostore）
+-- 捲軸（外觀沿用 manager / autostore）
 UI.SCROLL_BAR_WIDTH = 20
 UI.SCROLL_BAR_GAP = 4
 local SCROLL_TEXTURE = "ui/button/scroll_button.dds"
 local SCROLL_STEP = 40
 
 -- ============================================
--- 文字、按钮
+-- 文字、按鈕
 -- ============================================
 function UI.SetTextColor(widget, color)
     if widget == nil or color == nil then
@@ -69,7 +69,7 @@ function UI.SetTextColor(widget, color)
     end
 end
 
--- fn(self, doubleClick)；右键不动作
+-- fn(self, doubleClick)；右鍵不動作
 function UI.OnLeftClick(widget, fn)
     widget:SetHandler("OnClick", function(self, arg, doubleClick)
         if arg == "RightButton" then
@@ -87,7 +87,7 @@ function UI.CreateLabel(parent, id, width, height, fontSize)
     return label
 end
 
--- 不能点的棕色说明文字（标题、区段名称等）
+-- 不能點的棕色說明文字（標題、區段名稱等）
 function UI.CreateCaption(parent, id, width, height, fontSize, text)
     local label = UI.CreateLabel(parent, id, width, height, fontSize)
     label:EnablePick(false)
@@ -98,7 +98,7 @@ function UI.CreateCaption(parent, id, width, height, fontSize, text)
     return label
 end
 
--- 单行文字，超出宽度显示「...」（写法同 manager 的插件名称）
+-- 單行文字，超出寬度顯示「...」（寫法同 manager 的插件名稱）
 function UI.CreateEllipsisText(parent, id, fontSize)
     local box = parent:CreateChildWidget("textbox", id, 0, true)
     box:SetAutoWordwrap(false)
@@ -108,8 +108,8 @@ function UI.CreateEllipsisText(parent, id, fontSize)
     return box
 end
 
--- textbox 在 SetText 时就定下颜色，之后才改 style 颜色不会重画。
--- 所以先设颜色再设文字；颜色有变时先清空文字，确保文字没变也会用新颜色重画。
+-- textbox 在 SetText 時就定下顏色，之後才改 style 顏色不會重畫。
+-- 所以先設顏色再設文字；顏色有變時先清空文字，確保文字沒變也會用新顏色重畫。
 function UI.SetStatusText(box, text, status)
     local color = UI.StatusColor(status)
     if box.itv2Color ~= color then
@@ -120,7 +120,7 @@ function UI.SetStatusText(box, text, status)
     box:SetText(text)
 end
 
--- text_default 按钮在 SetText 时会自动改宽度，所以每次改字后都要重设大小
+-- text_default 按鈕在 SetText 時會自動改寬度，所以每次改字後都要重設大小
 function UI.SetButtonText(button, text)
     button:SetText(text)
     button:SetExtent(button.itv2Width, button.itv2Height)
@@ -151,8 +151,8 @@ function UI.CreateIconButton(parent, id, icon, fn)
     return button
 end
 
--- 原生 checkbutton（外观同附加组件管理器）
--- 勾选框会在点击处理之后自己再切换一次，所以 fn(self) 只改资料，画面状态由刷新时的 SetChecked 决定
+-- 原生 checkbutton（外觀同附加組件管理器）
+-- 勾選框會在點擊處理之後自己再切換一次，所以 fn(self) 只改資料，畫面狀態由刷新時的 SetChecked 決定
 function UI.CreateCheckBox(parent, id, fn)
     local box = parent:CreateChildWidget("checkbutton", id, 0, true)
     box:SetExtent(UI.CHECK_WIDTH, UI.CHECK_HEIGHT)
@@ -174,7 +174,7 @@ function UI.CreateCheckBox(parent, id, fn)
     return box
 end
 
--- 细项有 action 时才能点，双击才执行，避免误触（例：特产材料 → 拍卖场查询）
+-- 細項有 action 時才能點，雙擊才執行，避免誤觸（例：特產材料 → 拍賣場查詢）
 function UI.SetSubRowAction(label, action)
     label.itv2Action = action
     label:EnablePick(action ~= nil)
@@ -187,10 +187,10 @@ function UI.RunSubRowAction(self, doubleClick)
 end
 
 -- ============================================
--- 视窗
+-- 視窗
 -- ============================================
--- 拖动 handle 时移动 target；canDrag 回传 false 时不动。
--- 拖动的元件必须自己 StartMoving，叫别的视窗移动不会生效。
+-- 拖動 handle 時移動 target；canDrag 回傳 false 時不動。
+-- 拖動的元件必須自己 StartMoving，叫別的視窗移動不會生效。
 function UI.EnableWindowDrag(handle, target, canDrag, onStop)
     handle:EnableDrag(true)
     handle:SetHandler("OnDragStart", function()
@@ -213,7 +213,7 @@ function UI.EnableWindowDrag(handle, target, canDrag, onStop)
     end)
 end
 
--- 置中、可拖动、Esc 关闭、有底图的对话视窗（预设隐藏）
+-- 置中、可拖動、Esc 關閉、有底圖的對話視窗（預設隱藏）
 function UI.CreateDialog(id, width, height, offsetY)
     local window = CreateEmptyWindow(id, "UIParent")
     window:SetCloseOnEscape(true)
@@ -230,7 +230,7 @@ function UI.CreateDialog(id, width, height, offsetY)
     return window
 end
 
--- 读不到 Shift 状态时不要让标题栏变成完全拖不动：先放行，并提示一次
+-- 讀不到 Shift 狀態時不要讓標題欄變成完全拖不動：先放行，並提示一次
 local shiftWarned = false
 function UI.IsShiftDown()
     local ok, down = pcall(function()
@@ -254,11 +254,11 @@ function UI.EffectiveToAnchorOffset(value)
 end
 
 -- ============================================
--- 卷动区域
--- 清单项目放在 area.content 里，用 area:Place() 摆放（y 为清单内座标）。
--- 自己记录卷动位置并在排版时扣掉，完全超出可视范围的元件直接隐藏，
--- 所以每次重新排版都不会和卷动位置冲突。
--- 排版流程：Place 所有元件 → SetContentHeight(总高)，回传 true 时要再排一次。
+-- 捲動區域
+-- 清單項目放在 area.content 裡，用 area:Place() 擺放（y 為清單內座標）。
+-- 自己記錄捲動位置並在排版時扣掉，完全超出可視範圍的元件直接隱藏，
+-- 所以每次重新排版都不會和捲動位置衝突。
+-- 排版流程：Place 所有元件 → SetContentHeight(總高)，回傳 true 時要再排一次。
 -- ============================================
 function UI.CreateScrollArea(parent, id, onScroll)
     local area = { offset = 0, viewHeight = 0, onScroll = onScroll }
@@ -330,14 +330,14 @@ function UI.CreateScrollArea(parent, id, onScroll)
         end
     end)
 
-    -- 滑鼠滚轮：清单区与会接走滑鼠的元件都要绑
+    -- 滑鼠滾輪：清單區與會接走滑鼠的元件都要綁
     function area:BindWheel(widget)
         widget:SetHandler("OnWheelUp", ScrollUp)
         widget:SetHandler("OnWheelDown", ScrollDown)
     end
     area:BindWheel(content)
 
-    -- 可视范围（相对 parent）；卷轴贴在清单右边，间距 barGap（预设 SCROLL_BAR_GAP）
+    -- 可視範圍（相對 parent）；捲軸貼在清單右邊，間距 barGap（預設 SCROLL_BAR_GAP）
     function area:SetView(x, y, width, height, barGap)
         self.viewHeight = height
         content:RemoveAllAnchors()
@@ -353,7 +353,7 @@ function UI.CreateScrollArea(parent, id, onScroll)
         bar:Show(visible)
     end
 
-    -- 完整落在可视范围内才显示
+    -- 完整落在可視範圍內才顯示
     function area:Place(widget, x, y, height)
         local top = y - self.offset
         if top < 0 or top + height > self.viewHeight then
@@ -365,7 +365,7 @@ function UI.CreateScrollArea(parent, id, onScroll)
         widget:Show(true)
     end
 
-    -- 图标按钮右缘对齐 right、在行内垂直置中；回传下一个图标可用的右缘（由右往左排）
+    -- 圖標按鈕右緣對齊 right、在行內垂直置中；回傳下一個圖標可用的右緣（由右往左排）
     function area:PlaceIcon(button, right, rowY, rowHeight)
         local icon = button.itv2Icon
         local x = right - icon.width
@@ -373,7 +373,7 @@ function UI.CreateScrollArea(parent, id, onScroll)
         return x - UI.ICON_GAP
     end
 
-    -- 排版完后告知清单总高度；卷动位置被夹住时回传 true，呼叫端需要重排一次
+    -- 排版完後告知清單總高度；捲動位置被夾住時回傳 true，呼叫端需要重排一次
     function area:SetContentHeight(height)
         local max = math.max(0, height - self.viewHeight)
         local scrollable = max > 0

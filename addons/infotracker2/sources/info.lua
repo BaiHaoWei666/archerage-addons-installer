@@ -1,4 +1,4 @@
--- 角色信息（判定沿用 infotracker/documents/functions.lua）
+-- 角色資訊（判定沿用 infotracker/documents/functions.lua）
 ADDON:ImportAPI(API_TYPE.UNIT.id)
 ADDON:ImportAPI(API_TYPE.EQUIPMENT.id)
 ADDON:ImportAPI(API_TYPE.ACHIEVEMENT.id)
@@ -22,7 +22,7 @@ local function HasBlessing()
     return false
 end
 
--- 装备的剩余时间全为 0 才算过期；没穿或没有期限都当作正常
+-- 裝備的剩餘時間全為 0 才算過期；沒穿或沒有期限都當作正常
 local function IsSlotValid(slot)
     local info = X2Equipment:GetEquippedItemTooltipInfo(slot, false)
     local t = info and info.evolvingInfo and info.evolvingInfo.remainTime
@@ -34,8 +34,8 @@ local function IsSlotValid(slot)
     return not expired
 end
 
--- 今日任务（每日 / 公会）：有任务但一个都没解锁也没完成 = 未解锁
--- status：1 未开启、2 进行中、3 已完成（见 sources/assignment.lua）
+-- 今日任務（每日 / 公會）：有任務但一個都沒解鎖也沒完成 = 未解鎖
+-- status：1 未開啟、2 進行中、3 已完成（見 sources/assignment.lua）
 local function IsAssignmentUnlocked(kind)
     local total, started = 0, 0
     for index = 1, 7 do
@@ -52,7 +52,7 @@ local function IsAssignmentUnlocked(kind)
     return total == 0 or started > 0
 end
 
--- 每项：ok / bad = 正常 / 异常时显示的文字 key，check = 判定函数
+-- 每項：ok / bad = 正常 / 異常時顯示的文字 key，check = 判定函數
 local INFO_CHECKS = {
     INFO_BLESSING = { ok = "STATE_HAS", bad = "STATE_MISSING", check = HasBlessing },
     INFO_COSTUME = { ok = "STATE_VALID", bad = "STATE_EXPIRED", check = function() return IsSlotValid(ES_COSPLAY) end },

@@ -1,4 +1,4 @@
--- 今日净收入（依角色存在插件存档，每天自动归零）
+-- 今日淨收入（依角色存在插件存檔，每天自動歸零）
 ADDON:ImportAPI(API_TYPE.UNIT.id)
 
 local T = ITV2.Text
@@ -23,7 +23,7 @@ local function SaveIncome()
     ADDON:SaveData(incomeKey, income)
 end
 
--- 角色名要进入世界后才拿得到，所以第一次用到时才载入
+-- 角色名要進入世界後才拿得到，所以第一次用到時才載入
 local function EnsureIncome()
     if incomeKey == nil then
         local name = X2Unit:UnitName("player")
@@ -73,7 +73,7 @@ UIParent:SetEventHandler(UIEVENT_TYPE.EXP_CHANGED, function(_, amount)
     AddIncome("exp", amount)
 end)
 
--- 金额单位是铜（10000 = 1 金），显示方式沿用 infotracker
+-- 金額單位是銅（10000 = 1 金），顯示方式沿用 infotracker
 local function FormatGold(copper)
     if copper > -10000 and copper < 10000 then
         return T("LESS_THAN_1G")

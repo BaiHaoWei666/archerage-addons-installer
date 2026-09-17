@@ -1,4 +1,4 @@
--- 副本（建队逻辑沿用 infotracker/documents/controller.lua 的 CreateTeamForInstance）
+-- 副本（建隊邏輯沿用 infotracker/documents/controller.lua 的 CreateTeamForInstance）
 ADDON:ImportAPI(API_TYPE.BATTLE_FIELD.id)
 ADDON:ImportAPI(API_TYPE.SQUAD.id)
 
@@ -49,7 +49,7 @@ local function CreateSquad(instance, inviteParty)
     local minGS = info.gearScore or 0
     local minLV = info.levelMin or 55
 
-    -- 能单人就先快速匹配，失败再建非公开战队
+    -- 能單人就先快速匹配，失敗再建非公開戰隊
     if info.singleApplyAvailable == true and not CANNOT_SOLO[instance.type] then
         Chat(string.format(T("QUICK_ENTER"), name))
         if X2Squad:CreateSquad(instance.type, SOT_DIRECT_MATCHING, "", inviteParty, minLV, minGS) then
@@ -88,14 +88,14 @@ ITV2.SOURCES.dungeon = {
         }
     end,
 
-    -- 询问窗显示用的副本名称
+    -- 詢問窗顯示用的副本名稱
     GetName = function(item)
         local instance = GetDungeonList(nil)[item.index]
         local name = instance and X2BattleField:GetInstanceName(instance.type)
         return name or string.format(T("DUNGEON_FALLBACK"), item.index)
     end,
 
-    -- options.inviteParty：建立战队时邀请队伍成员
+    -- options.inviteParty：建立戰隊時邀請隊伍成員
     Activate = function(item, options)
         local instance = GetDungeonList(nil)[item.index]
         if instance == nil or instance.type == nil then

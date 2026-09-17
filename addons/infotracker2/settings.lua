@@ -1,17 +1,17 @@
--- 设定与存档（存档 key：itv2_settings）
--- 其他模组一律透过 ITV2.Settings.xxx 读写状态（Load 会整个换掉表格，不要另存区域变数）
+-- 設定與存檔（存檔 key：itv2_settings）
+-- 其他模組一律透過 ITV2.Settings.xxx 讀寫狀態（Load 會整個換掉表格，不要另存區域變數）
 local CATEGORIES = ITV2.CATEGORIES
 local Items = ITV2.Items
 
 local SAVE_KEY = "itv2_settings"
 local SAVE_VERSION = 2
 local COORD_SPACE_EFFECTIVE = "effective"
-local LEGACY_HEADER_HEIGHT = 26   -- 旧存档（记本体位置）换算用
+local LEGACY_HEADER_HEIGHT = 26   -- 舊存檔（記本體位置）換算用
 
 local S = {}
 ITV2.Settings = S
 
--- 面板设定：存在 popout[key]，设定页依此顺序列出
+-- 面板設定：存在 popout[key]，設定頁依此順序列出
 S.PANEL_SETTINGS = {
     { key = "height", text = "PANEL_HEIGHT", default = 300, min = 100, max = 800, step = 20 },
     { key = "width", text = "PANEL_WIDTH", default = 240, min = 200, max = 500, step = 10 },
@@ -21,15 +21,15 @@ S.PANEL_SETTINGS = {
     { key = "bgAlpha", text = "PANEL_BG_ALPHA", default = 80, min = 0, max = 100, step = 10 },
 }
 
-S.tracked = {}        -- { [itemKey] = true }：在悬浮窗追踪
-S.orderByCat = {}     -- { [catKey] = { itemKey, ... } }：项目顺序
-S.pageOrder = {}      -- { CATEGORIES 索引, ... }：分类顺序（设定窗口页签与悬浮窗切页共用）
-S.pageDisabled = {}   -- { [catKey] = true }：面板设定关掉的分类（悬浮窗切页时跳过）
-S.popoutPage = 1      -- 悬浮窗目前的分类（CATEGORIES 索引）
-S.popoutPosX = nil    -- 悬浮窗标题栏位置（effective 座标）
+S.tracked = {}        -- { [itemKey] = true }：在懸浮窗追蹤
+S.orderByCat = {}     -- { [catKey] = { itemKey, ... } }：項目順序
+S.pageOrder = {}      -- { CATEGORIES 索引, ... }：分類順序（設定窗口頁籤與懸浮窗切頁共用）
+S.pageDisabled = {}   -- { [catKey] = true }：面板設定關掉的分類（懸浮窗切頁時跳過）
+S.popoutPage = 1      -- 懸浮窗目前的分類（CATEGORIES 索引）
+S.popoutPosX = nil    -- 懸浮窗標題欄位置（effective 座標）
 S.popoutPosY = nil
-S.squadInvite = false -- 建立战队询问窗的「邀请队伍成员」，记住上次的选择
-S.panel = {}          -- { [PANEL_SETTINGS.key] = 数值 }
+S.squadInvite = false -- 建立戰隊詢問窗的「邀請隊伍成員」，記住上次的選擇
+S.panel = {}          -- { [PANEL_SETTINGS.key] = 數值 }
 
 for _, def in ipairs(S.PANEL_SETTINGS) do
     S.panel[def.key] = def.default
@@ -39,13 +39,13 @@ for index in ipairs(CATEGORIES) do
 end
 
 -- ============================================
--- 追踪项目
+-- 追蹤項目
 -- ============================================
 function S.IsTracked(key)
     return S.tracked[key] == true
 end
 
--- 回传是否有改变
+-- 回傳是否有改變
 function S.SetTracked(key, on)
     if key == nil or S.IsTracked(key) == on then
         return false
@@ -60,7 +60,7 @@ function S.TrackAll(keys)
     end
 end
 
--- 回传是否有移动
+-- 回傳是否有移動
 function S.MoveItem(catKey, fromIndex, delta)
     local order = S.orderByCat[catKey]
     local toIndex = fromIndex + delta
@@ -71,7 +71,7 @@ function S.MoveItem(catKey, fromIndex, delta)
     return true
 end
 
--- 以预设顺序为底，套用存档顺序；删掉已不存在的项目、补上新增的
+-- 以預設順序為底，套用存檔順序；刪掉已不存在的項目、補上新增的
 local function NormalizeOrder(cat, saved)
     local out, seen = {}, {}
     if type(saved) == "table" then
@@ -91,7 +91,7 @@ local function NormalizeOrder(cat, saved)
 end
 
 -- ============================================
--- 分类（页面）顺序与开关
+-- 分類（頁面）順序與開關
 -- ============================================
 function S.IsPageEnabled(index)
     local cat = CATEGORIES[index]
@@ -117,7 +117,7 @@ local function PagePosition(index)
     return 1
 end
 
--- 回传是否有移动
+-- 回傳是否有移動
 function S.MovePage(index, delta)
     local from = PagePosition(index)
     local to = from + delta
@@ -128,7 +128,7 @@ function S.MovePage(index, delta)
     return true
 end
 
--- 照显示顺序，从 from 往 delta 方向找下一个开着的分类（from 本身不算，不绕回头尾）；找不到回传 from
+-- 照顯示順序，從 from 往 delta 方向找下一個開著的分類（from 本身不算，不繞回頭尾）；找不到回傳 from
 function S.NextEnabledPage(from, delta)
     local position = PagePosition(from) + delta
     while position >= 1 and position <= #S.pageOrder do
@@ -141,7 +141,7 @@ function S.NextEnabledPage(from, delta)
     return from
 end
 
--- 悬浮窗目前的分类被关掉时，改到后面开着的分类，后面没有就往前找
+-- 懸浮窗目前的分類被關掉時，改到後面開著的分類，後面沒有就往前找
 local function EnsurePopoutPageEnabled()
     if S.IsPageEnabled(S.popoutPage) then
         return
@@ -153,7 +153,7 @@ local function EnsurePopoutPageEnabled()
     S.popoutPage = page
 end
 
--- 至少留一个开着的分类
+-- 至少留一個開著的分類
 function S.CanDisablePage(index)
     return not S.IsPageEnabled(index) or S.EnabledPageCount() > 1
 end
@@ -167,7 +167,7 @@ function S.SetPageEnabled(index, enabled)
     EnsurePopoutPageEnabled()
 end
 
--- 以存档的分类 key 顺序为底，补上新增的分类
+-- 以存檔的分類 key 順序為底，補上新增的分類
 local function LoadPageOrder(savedKeys)
     local indexByKey = {}
     for index, cat in ipairs(CATEGORIES) do
@@ -192,14 +192,14 @@ local function LoadPageOrder(savedKeys)
 end
 
 -- ============================================
--- 面板外观
+-- 面板外觀
 -- ============================================
 local function ClampPanelValue(def, value)
     return math.max(def.min, math.min(def.max, value))
 end
 
--- 调整一格，并对齐到 step 的倍数（旧存档可能不在间隔上，例如不透明度 75 → 80 / 70）
--- 回传是否有改变
+-- 調整一格，並對齊到 step 的倍數（舊存檔可能不在間隔上，例如不透明度 75 → 80 / 70）
+-- 回傳是否有改變
 function S.StepPanelValue(def, delta)
     local current = S.panel[def.key]
     local target = current + delta
@@ -216,7 +216,7 @@ function S.StepPanelValue(def, delta)
 end
 
 -- ============================================
--- 存档
+-- 存檔
 -- ============================================
 local function KeysOf(set)
     local list = {}
@@ -256,9 +256,9 @@ function S.Save()
     })
 end
 
--- 存档时已经存在的项目照存档；之后才新增的项目（或第一次使用）预设追踪
+-- 存檔時已經存在的項目照存檔；之後才新增的項目（或第一次使用）預設追蹤
 local function LoadTracked(saved)
-    -- version 1 的存档没有 known，当时只有任务项目
+    -- version 1 的存檔沒有 known，當時只有任務項目
     local known = {}
     if type(saved.known) == "table" then
         for _, key in ipairs(saved.known) do
@@ -314,7 +314,7 @@ local function LoadPopout(popout)
 
     S.popoutPosX = tonumber(popout.x)
     S.popoutPosY = tonumber(popout.y)
-    -- 旧存档记的是本体左上角；现在记标题栏，往上移一个标题栏高度保持画面位置不变
+    -- 舊存檔記的是本體左上角；現在記標題欄，往上移一個標題欄高度保持畫面位置不變
     if popout.anchor ~= "header" and S.popoutPosY ~= nil then
         S.popoutPosY = S.popoutPosY - LEGACY_HEADER_HEIGHT * ITV2.GetUiScale()
     end
