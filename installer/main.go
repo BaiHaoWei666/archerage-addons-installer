@@ -27,6 +27,10 @@ const (
 )
 
 func main() {
+	if err := waitForUpdateParent(); err != nil {
+		log.Fatal(err)
+	}
+
 	// 測試用參數：
 	//   --source <資料夾或網址>  改從本機 dist 資料夾或其他網址讀取
 	//   --addon-dir <資料夾>     暫時改用這個插件資料夾（不會存進設定）
