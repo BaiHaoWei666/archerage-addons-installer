@@ -1,12 +1,12 @@
--- 追踪项目资料
--- 每个分类的 kind 决定由 sources/ 里的哪个来源（ITV2.SOURCES[kind]）负责显示：
---   quest   任务组（ids = 所有阵营/轮换版本的任务 ID，max = 每天实际可完成数，省略时 = #ids）
---   info    角色信息
---   income  今日净收入（field = 累计的栏位：gold | vocation | honor | exp）
---   dungeon 副本（index = X2BattleField:GetInstanceListByKind(4) 里的位置，沿用 infotracker）
---   assignment 每日挑战（活动中心；slot = 第几格）
--- 分类的 fixed = true：全部列出，不能勾选或排序（悬浮窗依格子位置显示）
--- 所有项目的 key 必须全局唯一（存档用），同时也是 locale.lua 的文字 key
+-- 追蹤項目資料
+-- 每個分類的 kind 決定由 sources/ 裡的哪個來源（ITV2.SOURCES[kind]）負責顯示：
+--   quest   任務組（ids = 所有陣營/輪換版本的任務 ID，max = 每天實際可完成數，省略時 = #ids）
+--   info    角色資訊
+--   income  今日淨收入（field = 累計的欄位：gold | vocation | honor | exp）
+--   dungeon 副本（index = X2BattleField:GetInstanceListByKind(4) 裡的位置，沿用 infotracker）
+--   assignment 每日挑戰（活動中心；slot = 第幾格）
+-- 分類的 fixed = true：全部列出，不能勾選或排序（懸浮窗依格子位置顯示）
+-- 所有項目的 key 必須全局唯一（存檔用），同時也是 locale.lua 的文字 key
 ITV2.CATEGORIES = {
     {
         key = "daily",
@@ -14,7 +14,7 @@ ITV2.CATEGORIES = {
         kind = "quest",
         items = {
             { key = "GR", max = 8, ids = { 5138, 5139, 5140, 5150, 5151, 5152, 5153, 5154, 5155, 5156, 5142, 5157, 5143, 5144, 7648, 7649, 11192, 10739 },
-              -- 展开时的名称替换（完全相同才算）；同一个 label 的会合并成一行
+              -- 展開時的名稱替換（完全相同才算）；同一個 label 的會合併成一行
               merge = {
                   { label = "QUEST_SUPPLY_SHORTAGE", titles = { "石材不足", "木材不足", "布料不足", "皮革不足", "铁锭不足" } },
                   { label = "QUEST_NIGHTMARE_STAGE3", titles = { "不祥且惊悚的噩梦之痕：消灭军团第3阶段" } },
@@ -29,6 +29,8 @@ ITV2.CATEGORIES = {
             { key = "GARDENBOSS", ids = { 10056 } },
             { key = "YNYSWORD", ids = { 9965 } },
             { key = "CINDERSWORD", ids = { 9960 } },
+            { key = "IPNYSH_DAILY", ids = { 10558, 10559 } },
+            { key = "TREE_MAMMOTH", ids = { 9317, 9318 } },
         },
     },
     {
@@ -69,8 +71,8 @@ ITV2.CATEGORIES = {
         key = "challenge",
         label = "CAT_CHALLENGE",
         kind = "assignment",
-        fixed = true,   -- 全部列出，不能勾选或排序
-        -- 活动中心的每日挑战（X2Achievement 的 TADT_TODAY）；slot = 第几格
+        fixed = true,   -- 全部列出，不能勾選或排序
+        -- 活動中心的每日挑戰（X2Achievement 的 TADT_TODAY）；slot = 第幾格
         items = {
             { key = "AS_1", slot = 1 },
             { key = "AS_2", slot = 2 },
@@ -109,7 +111,7 @@ ITV2.CATEGORIES = {
         key = "dungeon",
         label = "CAT_DUNGEON",
         kind = "dungeon",
-        -- 顺序与分组沿用 infotracker：其他副本 7 个（跳过 6），再来英雄副本 7 个
+        -- 順序與分組沿用 infotracker：其他副本 7 個（跳過 6），再來英雄副本 7 個
         items = {
             { key = "DG_1", index = 1 },
             { key = "DG_2", index = 2 },
