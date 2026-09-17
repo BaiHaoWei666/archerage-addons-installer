@@ -21,6 +21,15 @@
 - 摘要直接描述變更；不同目的的變更分開提交。
 - 範例：`feat(infotracker2): 新增每日任務追蹤`、`doc: 更新插件開發流程`、`chore: 調整開發工具設定`。
 
+# Bump 版本規則
+
+- 以根目錄 `manifest.json` 為版本來源。只調高本次有變更的插件或安裝器版本；插件同步新增 changelog，已發布版本不重用。
+- 插件 bump 必須同步 `addons/<名稱>/version.txt`（純版本號、無 `v`、無 BOM）；即使該檔被 Git 忽略也要更新本機檔案，不強制加入版本控制。完成程式碼更新與測試後才寫入版本號，不可只改版本檔來消除更新提示。
+- 使用 Junction／符號連結開發時，先確認遊戲插件路徑確實指向本專案，再從遊戲路徑讀回 `version.txt` 驗證一致。一般安裝資料夾由安裝流程更新版本檔，不單獨改寫其版本號。
+- 打包後核對根目錄與 `catalog/manifest.json` 的版本，以及 `catalog/<名稱>.zip` 內的 `<名稱>/version.txt`、程式碼與本次來源一致；本機開發連結的版本也須一致。打包腳本只寫入暫存封裝的版本檔，不代表開發目錄已同步。
+- 安裝器 bump 同步兩份 manifest 的 `installer.version`、`installer/wails.json` 的 `info.productVersion` 與建置注入版本；release tag 為同一版本的 `v<版本號>`。沿用下方發布分流與上方固定 commit 訊息格式。
+- 完成條件：上述版本核對與 `scripts/test.ps1` 通過，再分項提交版本、更新紀錄與發布產物；提交不等於授權新增 tag 或發布安裝器。
+
 # 發布分流
 
 - 插件先收尾：程式、測試、插件版本、更新紀錄與 catalog 封裝完成後獨立提交；插件提交維持安裝器版本，不新增 release tag。

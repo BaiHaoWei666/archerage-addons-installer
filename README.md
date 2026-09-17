@@ -57,6 +57,8 @@ GitHub Actions 僅使用 GitHub 自動提供的工作流程憑證上傳 Release�
 
 ### 發佈新版本
 
+調整版本前依 [Bump 版本規則](AGENTS.md#bump-版本規則) 同步並驗證版本檔，包含遊戲開發連結讀到的版本。
+
 先完成插件的版本、更新紀錄與 catalog 封裝，獨立提交並推送；安裝器 release 另行處理，規則見 [AGENTS.md](AGENTS.md#發布分流)。
 
 ```powershell
