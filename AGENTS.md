@@ -11,3 +11,10 @@
 # 插件開發流程
 
 - 開發 infotracker2、查詢任務 ID 或重新載入實機測試時，讀取 [.agents/skills/dev-infotracker/SKILL.md](.agents/skills/dev-infotracker/SKILL.md)，再按需求載入查詢或實機測試文件。
+
+# Git commit 規範
+
+- 提交標題格式為 `type: 繁體中文摘要`；需要標示範圍時使用 `type(scope): 繁體中文摘要`。
+- 前綴使用小寫：`feat`（新增功能）、`fix`（修正錯誤）、`doc`（文件與 skill）、`chore`（維護與工具設定）、`refactor`（重構）、`test`（測試）、`perf`（效能）、`style`（格式）、`build`（建置）、`ci`（持續整合）、`revert`（還原）。
+- 摘要直接描述變更；不同目的的變更分開提交。
+- 範例：`feat(infotracker2): 新增每日任務追蹤`、`doc: 更新插件開發流程`、`chore: 調整開發工具設定`。
