@@ -333,7 +333,7 @@ func (s *ReleaseSource) describeError(err error) string {
 	case errors.Is(err, os.ErrPermission):
 		return "沒有寫入權限：" + err.Error()
 	}
-	var ue interface{ Timeout() bool }
+	var ue *url.Error
 	if errors.As(err, &ue) {
 		return "無法連線到 GitHub：" + err.Error()
 	}
