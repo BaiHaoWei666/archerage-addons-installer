@@ -17,8 +17,8 @@
   --danger: #e5484d;
   --danger-soft: rgba(229, 72, 77, .14);
   --radius: 10px;
-  --font: "Segoe UI Variable Text", "Segoe UI", "Noto Sans TC Variable", "Microsoft JhengHei UI", sans-serif;
-  --mono: "Cascadia Mono", Consolas, "Noto Sans TC Variable", monospace;
+  --font: "Microsoft JhengHei UI", "Microsoft JhengHei", "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  --mono: "Cascadia Mono", Consolas, "Microsoft JhengHei UI", "Microsoft JhengHei", "Microsoft YaHei UI", "Microsoft YaHei", monospace;
   color-scheme: dark;
 }
 

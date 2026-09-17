@@ -6,7 +6,7 @@
 
 私人倉庫：[BaiHaoWei666/archerage-addons-installer](https://github.com/BaiHaoWei666/archerage-addons-installer)。
 
-Go + Wails 版 Windows x64 exe 實測約 16.5 MiB（17.3 MB），包含 Logo、網頁介面與 Noto Sans TC 字型，不需要 .NET。
+Go + Wails 版 Windows x64 exe 包含 Logo 與網頁介面，使用 Windows 系統內建字型，不內嵌或額外下載字型，不需要 .NET。
 
 目前收錄的插件：
 
@@ -145,6 +145,5 @@ v1.0.1 及更早版本使用舊的 Release 附件格式；移除舊附件後，�
 ### 第三方元件
 
 - [Wails](https://wails.io/)（MIT）、[goldmark](https://github.com/yuin/goldmark)（MIT）、[golang.org/x/sys](https://pkg.go.dev/golang.org/x/sys)（BSD）
-- 介面字型：[Noto Sans TC](https://fonts.google.com/noto/specimen/Noto+Sans+TC)（思源黑體，SIL Open Font License 1.1，
-  授權全文見 `installer/frontend/dist/fonts/LICENSE-OFL.txt`），取自 `@fontsource-variable/noto-sans-tc@5.3.0`。
+- 介面使用系統字型：優先微軟正黑體，其次微軟雅黑、Segoe UI；等寬文字優先使用 Cascadia Mono 或 Consolas。
 - 側欄與 exe 圖示使用 ArcheRage 遊戲標誌，僅供私人使用。
