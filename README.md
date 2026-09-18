@@ -47,7 +47,7 @@ go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
 ./scripts/setup-addons.ps1
 ```
 
-腳本依 URL 的 repo 名稱 clone 到 `addons/<repo名稱>/`，保留已存在目錄；各目錄為獨立 Git repo，主專案忽略整個 `addons/`。若 repo 名稱與 manifest 的安裝名稱不同，遊戲連結應使用 manifest 的 `name`。插件依各自的 AGENTS.md、README 及測試流程維護。
+腳本依 URL 的 repo 名稱 clone 到 addons/，本機資料夾名稱會移除 archerage-addon- 前綴，保留已存在目錄；各目錄為獨立 Git repo，主專案忽略整個 `addons/`。若 repo 名稱與 manifest 的安裝名稱不同，遊戲連結應使用 manifest 的 `name`。插件依各自的 AGENTS.md、README 及測試流程維護。
 
 `--source <資料夾或網址>` 可使用舊式彙整 manifest 和同目錄附件做隔離測試；`--addon-dir <資料夾>` 暫時指定安裝位置，不改設定。
 
