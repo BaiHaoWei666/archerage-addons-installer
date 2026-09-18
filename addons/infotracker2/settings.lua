@@ -13,12 +13,12 @@ ITV2.Settings = S
 
 -- 面板設定：存在 popout[key]，設定頁依此順序列出
 S.PANEL_SETTINGS = {
-    { key = "height", text = "PANEL_HEIGHT", default = 300, min = 100, max = 800, step = 20 },
-    { key = "width", text = "PANEL_WIDTH", default = 240, min = 200, max = 500, step = 10 },
-    { key = "fontTitle", text = "PANEL_FONT_TITLE", default = 14, min = 10, max = 24, step = 1 },
+    { key = "height", text = "PANEL_HEIGHT", default = 260, min = 100, max = 800, step = 20 },
+    { key = "width", text = "PANEL_WIDTH", default = 220, min = 200, max = 500, step = 10 },
+    { key = "fontTitle", text = "PANEL_FONT_TITLE", default = 15, min = 10, max = 24, step = 1 },
     { key = "fontItem", text = "PANEL_FONT_ITEM", default = 14, min = 10, max = 24, step = 1 },
-    { key = "fontSub", text = "PANEL_FONT_SUB", default = 12, min = 8, max = 22, step = 1 },
-    { key = "bgAlpha", text = "PANEL_BG_ALPHA", default = 80, min = 0, max = 100, step = 10 },
+    { key = "fontSub", text = "PANEL_FONT_SUB", default = 13, min = 8, max = 22, step = 1 },
+    { key = "bgAlpha", text = "PANEL_BG_ALPHA", default = 60, min = 0, max = 100, step = 10 },
 }
 
 S.tracked = {}        -- { [itemKey] = true }：在懸浮窗追蹤

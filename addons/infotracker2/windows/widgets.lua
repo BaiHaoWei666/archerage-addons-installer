@@ -20,10 +20,10 @@ local UI = {}
 ITV2.UI = UI
 
 UI.STATUS_COLORS = {
-    notStarted = { 0.85, 0.15, 0.12, 1 },
-    inProgress = { 0.85, 0.40, 0.05, 1 },
-    complete = { 0.20, 0.75, 0.20, 1 },
-    neutral = { 0.90, 0.90, 0.90, 1 },
+    notStarted = { 0.90, 0.24, 0.20, 1 },
+    inProgress = { 0.98, 0.70, 0.15, 1 },
+    complete = { 0.275, 0.875, 0.30, 1 },
+    neutral = { 0.95, 0.95, 0.95, 1 },
 }
 
 function UI.StatusColor(status)
@@ -365,7 +365,8 @@ function UI.CreateScrollArea(parent, id, onScroll)
 
     local function PlacePosition(self, widget, x, y, height)
         local top = y - self.offset
-        local visible = top >= 0 and top + height <= self.viewHeight
+        -- 邊界只露出部分的行仍顯示，由 EnableScroll 的內容區域裁切。
+        local visible = top < self.viewHeight and top + height > 0
         if visible then
             local old = widget.itv2Placement
             if old == nil or old.x ~= x or old.y ~= top then
