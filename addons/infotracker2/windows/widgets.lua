@@ -112,12 +112,14 @@ end
 -- 所以先設顏色再設文字；顏色有變時先清空文字，確保文字沒變也會用新顏色重畫。
 function UI.SetStatusText(box, text, status)
     local color = UI.StatusColor(status)
+    if box.itv2Color == color and box.itv2Text == text then return end
     if box.itv2Color ~= color then
         box.itv2Color = color
         UI.SetTextColor(box, color)
         box:SetText("")
     end
     box:SetText(text)
+    box.itv2Text = text
 end
 
 -- text_default 按鈕在 SetText 時會自動改寬度，所以每次改字後都要重設大小
@@ -176,8 +178,10 @@ end
 
 -- 細項有 action 時才能點，雙擊才執行，避免誤觸（例：特產材料 → 拍賣場查詢）
 function UI.SetSubRowAction(label, action)
+    if (label.itv2Action ~= nil) ~= (action ~= nil) then
+        label:EnablePick(action ~= nil)
+    end
     label.itv2Action = action
-    label:EnablePick(action ~= nil)
 end
 
 function UI.RunSubRowAction(self, doubleClick)
@@ -258,10 +262,10 @@ end
 -- 清單項目放在 area.content 裡，用 area:Place() 擺放（y 為清單內座標）。
 -- 自己記錄捲動位置並在排版時扣掉，完全超出可視範圍的元件直接隱藏，
 -- 所以每次重新排版都不會和捲動位置衝突。
--- 排版流程：Place 所有元件 → SetContentHeight(總高)，回傳 true 時要再排一次。
+-- 排版流程：BeginLayout → Place → SetContentHeight；位置改變時用 Reposition，無須重查資料。
 -- ============================================
 function UI.CreateScrollArea(parent, id, onScroll)
-    local area = { offset = 0, viewHeight = 0, onScroll = onScroll }
+    local area = { offset = 0, viewHeight = 0, onScroll = onScroll, placements = {}, visibleWidgets = {} }
 
     local content = parent:CreateChildWidget("emptywidget", id .. "Content", 0, true)
     content:EnableScroll(true)
@@ -353,16 +357,41 @@ function UI.CreateScrollArea(parent, id, onScroll)
         bar:Show(visible)
     end
 
-    -- 完整落在可視範圍內才顯示
-    function area:Place(widget, x, y, height)
+    -- 排版記錄只在資料或結構更新時重建，捲動直接重用。
+    function area:BeginLayout()
+        self.placements = {}
+        self.visibleWidgets = {}
+    end
+
+    local function PlacePosition(self, widget, x, y, height)
         local top = y - self.offset
-        if top < 0 or top + height > self.viewHeight then
-            widget:Show(false)
-            return
+        local visible = top >= 0 and top + height <= self.viewHeight
+        if visible then
+            local old = widget.itv2Placement
+            if old == nil or old.x ~= x or old.y ~= top then
+                widget:RemoveAllAnchors()
+                widget:AddAnchor("TOPLEFT", content, x, top)
+                widget.itv2Placement = { x = x, y = top }
+            end
+            self.visibleWidgets[#self.visibleWidgets + 1] = widget
         end
-        widget:RemoveAllAnchors()
-        widget:AddAnchor("TOPLEFT", content, x, top)
-        widget:Show(true)
+        -- 首次必須設定自身狀態，不能把父視窗隱藏誤認為元件已隱藏。
+        if widget.itv2PlacedVisible ~= visible or widget:IsVisible() ~= visible then
+            widget:Show(visible)
+        end
+        widget.itv2PlacedVisible = visible
+    end
+
+    function area:Place(widget, x, y, height)
+        self.placements[#self.placements + 1] = { widget = widget, x = x, y = y, height = height }
+        PlacePosition(self, widget, x, y, height)
+    end
+
+    function area:Reposition()
+        self.visibleWidgets = {}
+        for _, p in ipairs(self.placements) do
+            PlacePosition(self, p.widget, p.x, p.y, p.height)
+        end
     end
 
     -- 圖標按鈕右緣對齊 right、在行內垂直置中；回傳下一個圖標可用的右緣（由右往左排）
@@ -373,9 +402,10 @@ function UI.CreateScrollArea(parent, id, onScroll)
         return x - UI.ICON_GAP
     end
 
-    -- 排版完後告知清單總高度；捲動位置被夾住時回傳 true，呼叫端需要重排一次
+    -- 排版完後告知清單總高度；捲動位置被夾住時回傳 true，呼叫端使用 Reposition
     function area:SetContentHeight(height)
         local max = math.max(0, height - self.viewHeight)
+        if self.maxOffset == max then return false end
         local scrollable = max > 0
         local clamped = false
         self.scrollable = scrollable

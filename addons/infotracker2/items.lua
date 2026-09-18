@@ -1,5 +1,5 @@
--- 追踪项目索引，以及对来源的安全呼叫（来源读不到资料或出错时，不让视窗停止刷新）
--- 来源介面见 sources/common.lua
+-- 追蹤項目索引，以及對來源的安全呼叫（來源讀不到資料或出錯時，不讓視窗停止重新整理）
+-- 來源介面見 sources/common.lua
 local T = ITV2.Text
 
 local Items = {}
@@ -18,7 +18,7 @@ local function SourceOf(key)
     return ITV2.SOURCES[Items.catByKey[key].kind]
 end
 
--- 每次刷新新建一个，给来源快取本次刷新的资料
+-- 每次重新整理新建一個，給來源快取本次重新整理的資料
 function Items.NewContext()
     return {}
 end
@@ -31,7 +31,7 @@ function Items.View(key, ctx)
     return { text = T(key) .. " ?", status = "neutral" }
 end
 
--- 来源能展开，且（有 CanExpand 时）这一项也能展开
+-- 來源能展開，且（有 CanExpand 時）這一項也能展開
 function Items.CanExpand(key, ctx)
     local source = SourceOf(key)
     if not source.expandable then
@@ -64,7 +64,7 @@ function Items.Activate(key, options)
     SourceOf(key).Activate(Items.byKey[key], options)
 end
 
--- 询问窗显示的名称
+-- 詢問窗顯示的名稱
 function Items.GetName(key)
     local source = SourceOf(key)
     if source.GetName ~= nil then
@@ -76,15 +76,7 @@ function Items.GetName(key)
     return T(key)
 end
 
-function Items.TickSources(dt)
-    for _, source in pairs(ITV2.SOURCES) do
-        if source.Tick ~= nil then
-            source.Tick(dt)
-        end
-    end
-end
-
--- 核对用：依序输出项目的「名称 → ID」（只有任务来源有 Dump）
+-- 核對用：依序輸出項目的「名稱 → ID」（只有任務來源有 Dump）
 function Items.Dump(keys)
     local ctx = Items.NewContext()
     for _, key in ipairs(keys) do

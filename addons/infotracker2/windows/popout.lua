@@ -120,8 +120,9 @@ local bodyBg = body:CreateColorDrawable(BG_COLOR[1], BG_COLOR[2], BG_COLOR[3], 1
 bodyBg:AddAnchor("TOPLEFT", body, 0, 0)
 bodyBg:AddAnchor("BOTTOMRIGHT", body, 0, 0)
 
-local area = UI.CreateScrollArea(body, "itv2PopList", function()
-    Popout.Refresh()
+local area
+area = UI.CreateScrollArea(body, "itv2PopList", function()
+    area:Reposition()
 end)
 local listParent = area.content
 
@@ -170,6 +171,8 @@ menuBg:AddAnchor("TOPLEFT", menu, 0, 0)
 menuBg:AddAnchor("BOTTOMRIGHT", menu, 0, 0)
 
 local menuRows = {}
+local menuCount = 0
+local menuSignature = nil
 
 local function EnsureMenuRow(index)
     local label = menuRows[index]
@@ -190,6 +193,10 @@ local function EnsureMenuRow(index)
 end
 
 local function LayoutPageMenu()
+    local signature = table.concat(S.pageOrder, ",") .. ":" .. S.popoutPage .. ":" .. S.panel.width .. ":" .. S.panel.fontItem
+    for _, index in ipairs(S.pageOrder) do signature = signature .. tostring(S.IsPageEnabled(index)) end
+    if menuSignature == signature then return end
+    menuSignature = signature
     local rowHeight = RowHeight()
     local count = 0
     for _, pageIndex in ipairs(S.pageOrder) do
@@ -199,6 +206,7 @@ local function LayoutPageMenu()
             label.pageIndex = pageIndex
             label:SetExtent(S.panel.width, rowHeight)
             label.style:SetFontSize(S.panel.fontItem)
+            label.itv2Text = nil
             UI.SetStatusText(label, T(CATEGORIES[pageIndex].label),
                 pageIndex == S.popoutPage and "complete" or "neutral")
             label:RemoveAllAnchors()
@@ -209,6 +217,7 @@ local function LayoutPageMenu()
     for index = count + 1, #menuRows do
         menuRows[index]:Show(false)
     end
+    menuCount = count
     menu:SetExtent(S.panel.width, PADDING_TOP * 2 + count * rowHeight)
 end
 
@@ -235,12 +244,14 @@ local function StyleRow(label)
     label.style:SetShadow(true)
     label:SetExtent(ListWidth(), RowHeight())
     label.style:SetFontSize(S.panel.fontItem)
+    label.itv2Text = nil
 end
 
 local function StyleSubRow(label)
     label.style:SetShadow(true)
     label:SetExtent(ListWidth() - SUB_INDENT, SubRowHeight())
     label.style:SetFontSize(S.panel.fontSub)
+    label.itv2Text = nil
 end
 
 -- 項目行：能展開的單擊展開 / 收起；有動作的（副本）雙擊跳出詢問窗，單擊不動作避免誤觸
@@ -290,6 +301,7 @@ function Popout.ApplyLayout()
     header:SetExtent(width, headerHeight)
     title:SetExtent(width, headerHeight)
     title.style:SetFontSize(S.panel.fontTitle)
+    title.itv2Title = nil
 
     body:SetExtent(width, S.panel.height)
     area:SetView(PADDING_LEFT, PADDING_TOP, ListWidth(),
@@ -327,9 +339,10 @@ local function SetHovered(visible)
     UpdateBarVisible()
 end
 
-local function IsAnyMouseOver(labels)
-    for _, label in ipairs(labels) do
-        if label:IsVisible() and label:IsMouseOver() then
+local function IsAnyMouseOver(labels, count)
+    for index = 1, count or #labels do
+        local label = labels[index]
+        if label:IsMouseOver() then
             return true
         end
     end
@@ -343,13 +356,15 @@ local function IsMouseOver()
         return true
     end
     -- 可點擊的行會接走滑鼠，另外檢查
-    return IsAnyMouseOver(rows) or IsAnyMouseOver(subRows) or IsAnyMouseOver(menuRows)
+    return IsAnyMouseOver(area.visibleWidgets)
+        or (menu:IsVisible() and IsAnyMouseOver(menuRows, menuCount))
 end
 
 -- ============================================
 -- 排版與刷新
 -- ============================================
 local function Layout(cat, revealKey)
+    area:BeginLayout()
     local ctx = Items.NewContext()
     local rowHeight = RowHeight()
     local subRowHeight = SubRowHeight()
@@ -409,7 +424,11 @@ end
 
 function Popout.Refresh(revealKey)
     local cat = CATEGORIES[S.popoutPage]
-    title:SetText(T(cat.label))
+    local titleText = T(cat.label)
+    if title.itv2Title ~= titleText then
+        title:SetText(titleText)
+        title.itv2Title = titleText
+    end
     prevButton:Enable(S.NextEnabledPage(S.popoutPage, -1) ~= S.popoutPage)
     nextButton:Enable(S.NextEnabledPage(S.popoutPage, 1) ~= S.popoutPage)
     local height, revealTop, revealBottom = Layout(cat, revealKey)
@@ -419,7 +438,7 @@ function Popout.Refresh(revealKey)
         repositioned = area:RevealRange(revealTop, revealBottom) or repositioned
     end
     if repositioned then
-        Layout(cat)
+        area:Reposition()
     end
     UpdateBarVisible()
     -- 分類的順序、開關或面板外觀改了，選單也跟著更新
@@ -428,20 +447,22 @@ function Popout.Refresh(revealKey)
     end
 end
 
-local elapsed = REFRESH_MS
+local elapsed = 0
+local hoverElapsed = 0
+local HOVER_CHECK_MS = 75
 body:SetHandler("OnUpdate", function(self, dt)
-    Items.TickSources(dt)
+    ITV2.AdvanceTime(dt)
 
-    -- 懸停（本體或標題欄）才顯示按鈕；離開後稍等一下再收起
-    if IsMouseOver() then
-        leftFor = 0
-        if not hovered then
-            SetHovered(true)
-        end
-    elseif hovered then
-        leftFor = leftFor + dt
-        if leftFor >= HOVER_LINGER_MS then
-            SetHovered(false)
+    hoverElapsed = hoverElapsed + dt
+    if hoverElapsed >= HOVER_CHECK_MS then
+        local sampleMs = hoverElapsed
+        hoverElapsed = 0
+        if IsMouseOver() then
+            leftFor = 0
+            if not hovered then SetHovered(true) end
+        elseif hovered then
+            leftFor = leftFor + sampleMs
+            if leftFor >= HOVER_LINGER_MS then SetHovered(false) end
         end
     end
 

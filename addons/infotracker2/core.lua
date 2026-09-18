@@ -36,3 +36,28 @@ function ITV2.RefreshAll()
     ITV2.Editor.Refresh()
     ITV2.Popout.Refresh()
 end
+
+-- 使用遊戲 OnUpdate 的毫秒差值，不依賴未確認的外部時間 API。
+local clockMs = 0
+local jobs = {}
+function ITV2.NowMs()
+    return clockMs
+end
+function ITV2.Schedule(key, delay, callback)
+    jobs[key] = { due = clockMs + delay, callback = callback }
+end
+function ITV2.AdvanceTime(dt)
+    clockMs = clockMs + math.max(0, tonumber(dt) or 0)
+    if next(jobs) == nil then return end
+    local ready = nil
+    for key, job in pairs(jobs) do
+        if job.due <= clockMs then
+            jobs[key] = nil
+            ready = ready or {}
+            ready[#ready + 1] = job.callback
+        end
+    end
+    if ready then
+        for _, callback in ipairs(ready) do callback() end
+    end
+end

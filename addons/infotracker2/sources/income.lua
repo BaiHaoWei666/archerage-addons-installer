@@ -24,7 +24,7 @@ local function SaveIncome()
 end
 
 -- 角色名要進入世界後才拿得到，所以第一次用到時才載入
-local function EnsureIncome()
+local function EnsureIncome(deferRolloverSave)
     if incomeKey == nil then
         local name = X2Unit:UnitName("player")
         if name == nil or name == "" then
@@ -43,14 +43,14 @@ local function EnsureIncome()
     local today = TodayString()
     if income.date ~= today then
         income = EmptyIncome(today)
-        SaveIncome()
+        if not deferRolloverSave then SaveIncome() end
     end
     return true
 end
 
 local function AddIncome(field, amount)
     amount = tonumber(amount)
-    if amount == nil or not EnsureIncome() then
+    if amount == nil or amount == 0 or not EnsureIncome(true) then
         return
     end
     income[field] = income[field] + amount
@@ -92,7 +92,7 @@ ITV2.SOURCES.income = {
     end,
 
     Reset = function()
-        if not EnsureIncome() then
+        if not EnsureIncome(true) then
             return
         end
         income = EmptyIncome(TodayString())

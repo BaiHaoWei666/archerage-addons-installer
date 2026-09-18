@@ -19,20 +19,27 @@ local ASSIGNMENT_STATUS = {
     [3] = "complete",
 }
 
-local function GetInfo(item)
+local function GetInfo(item, ctx)
+    ctx.assignmentInfo = ctx.assignmentInfo or {}
+    local cached = ctx.assignmentInfo[item.slot]
+    if cached ~= nil then return cached or nil end
     local info = X2Achievement:GetTodayAssignmentInfo(TADT_TODAY, item.slot)
-    if type(info) ~= "table" then
-        return nil
-    end
-    return info
+    ctx.assignmentInfo[item.slot] = type(info) == "table" and info or false
+    return ctx.assignmentInfo[item.slot] or nil
 end
 
 local function GetSpecialtyCraft(item, ctx)
-    local info = GetInfo(item)
+    ctx.assignmentCraft = ctx.assignmentCraft or {}
+    local cached = ctx.assignmentCraft[item.slot]
+    if cached ~= nil then return cached or nil end
+    local info = GetInfo(item, ctx)
     if info == nil or info.questType == nil then
+        ctx.assignmentCraft[item.slot] = false
         return nil
     end
-    return Specialty.GetCraft(info.questType, ctx)
+    local craft = Specialty.GetCraft(info.questType, ctx)
+    ctx.assignmentCraft[item.slot] = craft or false
+    return craft
 end
 
 ITV2.SOURCES.assignment = {
@@ -68,7 +75,7 @@ ITV2.SOURCES.assignment = {
     end,
 
     View = function(item, ctx)
-        local info = GetInfo(item)
+        local info = GetInfo(item, ctx)
         local fallback = string.format(T("CHALLENGE_SLOT"), item.slot)
         if info == nil then
             return { text = fallback, status = "neutral" }
@@ -86,7 +93,4 @@ ITV2.SOURCES.assignment = {
         }
     end,
 
-    Tick = function(dt)
-        Specialty.Tick(dt)
-    end,
 }
