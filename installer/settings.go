@@ -2,13 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 )
 
 // Settings 存在 %AppData%\ArcheRageAddonInstaller\settings.json，exe 放哪裡都不影響。
 type Settings struct {
-	AddonDir string `json:"addonDir,omitempty"`
+	migrationWarning string
+	AddonDir         string `json:"addonDir,omitempty"`
 }
 
 func settingsPath() string {
@@ -19,10 +21,32 @@ func settingsPath() string {
 	return filepath.Join(dir, appDirName, "settings.json")
 }
 
-func loadSettings() *Settings {
+func loadSettings() *Settings { return readSettings(settingsPath()) }
+
+// 啟動時移除舊憑證欄位，保留資料夾與尚未識別的其他設定。
+func readSettings(path string) *Settings {
 	s := &Settings{}
-	if data, err := os.ReadFile(settingsPath()); err == nil {
-		_ = json.Unmarshal(data, s) // 設定檔壞掉就用預設值
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return s
+	}
+	if json.Unmarshal(data, s) != nil {
+		return &Settings{}
+	}
+	var fields map[string]json.RawMessage
+	if json.Unmarshal(data, &fields) != nil {
+		return s
+	}
+	if _, exists := fields["token"]; !exists {
+		return s
+	}
+	delete(fields, "token")
+	cleaned, err := json.MarshalIndent(fields, "", "  ")
+	if err == nil {
+		err = os.WriteFile(path, cleaned, 0600)
+	}
+	if err != nil {
+		s.migrationWarning = fmt.Sprintf("舊版權杖清理失敗，請檢查設定檔寫入權限：%s", path)
 	}
 	return s
 }

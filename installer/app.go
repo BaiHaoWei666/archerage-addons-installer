@@ -198,6 +198,10 @@ func (a *App) postState() {
 
 	a.mu.Lock()
 	manifest := a.manifest
+	warnings := []string{}
+	if a.settings.migrationWarning != "" {
+		warnings = append(warnings, a.settings.migrationWarning)
+	}
 	state := map[string]interface{}{
 		"type":         "state",
 		"addonDir":     dir,
@@ -250,8 +254,9 @@ func (a *App) postState() {
 	}
 	state["addons"] = addons
 	if manifest != nil {
-		state["warnings"] = manifest.Warnings
+		warnings = append(warnings, manifest.Warnings...)
 	}
+	state["warnings"] = warnings
 	state["installer"] = map[string]interface{}{
 		"current":   version,
 		"latest":    latest,
