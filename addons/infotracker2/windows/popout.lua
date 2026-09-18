@@ -88,6 +88,7 @@ local title = header:CreateChildWidget("label", "itv2PopTitle", 0, true)
 title:AddAnchor("TOPLEFT", header, 0, 0)
 title.style:SetAlign(ALIGN_CENTER)
 title.style:SetColor(1, 0.85, 0.55, 1)
+title.style:SetShadow(true)
 title:EnablePick(false)
 
 local prevButton = header:CreateChildWidget("button", "itv2PopPrev", 0, true)
@@ -130,6 +131,7 @@ local subRows = {}
 
 -- 沒有追蹤項目時的提示，點了打開設定窗口
 local emptyHint = UI.CreateTextButton(listParent, "itv2PopEmpty", T("EMPTY_HINT"), 100, 22)
+emptyHint.style:SetShadow(true)
 UI.OnLeftClick(emptyHint, ToggleEditor)
 
 local ShowPageMenu
@@ -175,6 +177,7 @@ local function EnsureMenuRow(index)
         return label
     end
     label = UI.CreateEllipsisText(menu, "itv2PopPageMenuRow" .. index, S.panel.fontItem)
+    label.style:SetShadow(true)
     label.style:SetAlign(ALIGN_CENTER)
     label:EnablePick(true)
     UI.OnLeftClick(label, function(self)
@@ -229,11 +232,13 @@ header:SetHandler("OnMouseUp", function()
 end)
 
 local function StyleRow(label)
+    label.style:SetShadow(true)
     label:SetExtent(ListWidth(), RowHeight())
     label.style:SetFontSize(S.panel.fontItem)
 end
 
 local function StyleSubRow(label)
+    label.style:SetShadow(true)
     label:SetExtent(ListWidth() - SUB_INDENT, SubRowHeight())
     label.style:SetFontSize(S.panel.fontSub)
 end
