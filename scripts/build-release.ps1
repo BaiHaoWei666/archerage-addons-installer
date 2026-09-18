@@ -3,6 +3,8 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $version = (Get-Content (Join-Path $root 'manifest.json') -Raw | ConvertFrom-Json).installer.version
 $dist = Join-Path $root 'dist'
+if ([IO.Path]::GetFullPath($dist) -ne [IO.Path]::GetFullPath((Join-Path $root 'dist'))) { throw '建置輸出路徑不合法' }
+if (Test-Path -LiteralPath $dist) { Remove-Item -LiteralPath $dist -Recurse -Force }
 New-Item -ItemType Directory -Path $dist -Force | Out-Null
 $wails = Get-Content (Join-Path $root 'installer/wails.json') -Raw | ConvertFrom-Json
 if ($wails.info.productVersion -ne $version) { throw 'manifest 與 wails.json 版本不一致' }
@@ -13,3 +15,8 @@ try {
     Copy-Item 'build/bin/ArcheRageAddonInstaller.exe' $dist -Force
 } finally { Pop-Location }
 Write-Host "已建置安裝器 $version"
+$exe = Join-Path $dist 'ArcheRageAddonInstaller.exe'
+$info = (Get-Item -LiteralPath $exe).VersionInfo
+$reported = (& $exe --version | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or $reported -ne $version -or $info.ProductVersion -ne $version -or $info.FileVersion -ne $version) { throw '建置產物版本與 manifest 不一致' }
+Write-Host "已核對執行檔與 Windows 資源版本：$reported"
