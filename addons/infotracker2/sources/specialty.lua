@@ -102,7 +102,7 @@ function Specialty.SearchAuction(name)
         ITV2.Chat(string.format(T("AUCTION_OPEN_FAILED"), tostring(err)))
     end
     ITV2.Schedule("specialtyAuction", AUCTION_SEARCH_DELAY_MS, function()
-        -- 同 Folio105；同一等待期間只送出最後選取的材料。
+        -- 同一等待期間只送出最後選取的材料。
         local success, reason = pcall(function()
             X2Auction:SearchAuctionArticle(1, 0, 999, 1, 0, false, name, "0", "0")
         end)

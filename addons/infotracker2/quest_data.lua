@@ -3,7 +3,7 @@
 --   quest   任務組（ids = 所有陣營/輪換版本的任務 ID，max = 每天實際可完成數，省略時 = #ids）
 --   info    角色資訊
 --   income  今日淨收入（field = 累計的欄位：gold | vocation | honor | exp）
---   dungeon 副本（index = X2BattleField:GetInstanceListByKind(4) 裡的位置，沿用 infotracker）
+--   dungeon 副本（index = X2BattleField:GetInstanceListByKind(4) 裡的位置）
 --   assignment 每日挑戰（活動中心；slot = 第幾格）
 -- 分類的 fixed = true：全部列出，不能勾選或排序（懸浮窗依格子位置顯示）
 -- 所有項目的 key 必須全局唯一（存檔用），同時也是 locale.lua 的文字 key
@@ -111,7 +111,7 @@ ITV2.CATEGORIES = {
         key = "dungeon",
         label = "CAT_DUNGEON",
         kind = "dungeon",
-        -- 順序與分組沿用 infotracker：其他副本 7 個（跳過 6），再來英雄副本 7 個
+        -- 副本分組：其他副本 7 個（跳過 6），再來英雄副本 7 個
         items = {
             { key = "DG_1", index = 1 },
             { key = "DG_2", index = 2 },

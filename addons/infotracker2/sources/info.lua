@@ -1,4 +1,4 @@
--- 角色資訊（判定沿用 infotracker/documents/functions.lua）
+-- 角色資訊與狀態判定
 ADDON:ImportAPI(API_TYPE.UNIT.id)
 ADDON:ImportAPI(API_TYPE.EQUIPMENT.id)
 ADDON:ImportAPI(API_TYPE.ACHIEVEMENT.id)

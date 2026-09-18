@@ -1,4 +1,4 @@
--- 副本（建隊邏輯沿用 infotracker/documents/controller.lua 的 CreateTeamForInstance）
+-- 副本次數與建立戰隊
 ADDON:ImportAPI(API_TYPE.BATTLE_FIELD.id)
 ADDON:ImportAPI(API_TYPE.SQUAD.id)
 
