@@ -74,11 +74,20 @@ end
 -- 以預設順序為底，套用存檔順序；刪掉已不存在的項目、補上新增的
 local function NormalizeOrder(cat, saved)
     local out, seen = {}, {}
+    local hasBsb60 = false
+    for _, key in ipairs(type(saved) == "table" and saved or {}) do
+        if key == "BSB60" then hasBsb60 = true end
+    end
     if type(saved) == "table" then
         for _, key in ipairs(saved) do
             if Items.catByKey[key] == cat and not seen[key] then
                 out[#out + 1] = key
                 seen[key] = true
+                -- 舊債券拆組後相鄰排列；已分別排序的存檔保持原順序。
+                if key == "BSB" and not hasBsb60 and Items.catByKey.BSB60 == cat then
+                    out[#out + 1] = "BSB60"
+                    seen.BSB60 = true
+                end
             end
         end
     end
@@ -272,6 +281,9 @@ local function LoadTracked(saved)
         end
     end
 
+    -- 舊債券的勾選狀態同時沿用到 20 與 60 組，之後可各自調整。
+    local splitBonds = known.BSB and (not known.BSB60 or type(saved.known) ~= "table")
+    if splitBonds then known.BSB60 = true end
     S.tracked = {}
     for key in pairs(Items.byKey) do
         if not known[key] then
@@ -285,6 +297,7 @@ local function LoadTracked(saved)
             end
         end
     end
+    if splitBonds then S.tracked.BSB60 = S.tracked.BSB end
 end
 
 local function LoadPopout(popout)
