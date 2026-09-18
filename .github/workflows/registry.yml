@@ -1,0 +1,30 @@
+name: 發布收錄清單
+on:
+  push:
+    branches: [main]
+    paths: [repositories.json, scripts/validate-repositories.ps1, .github/workflows/registry.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: registry
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/validate-repositories.ps1
+        shell: pwsh
+      - name: 更新清單附件
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view registry *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create registry repositories.json --target "$env:GITHUB_SHA" --title '插件收錄清單' --notes '此預發布僅提供收錄清單，安裝器版本請見正式 Release。' --prerelease --latest=false
+          } else {
+            gh release upload registry repositories.json --clobber
+          }
+          if ($LASTEXITCODE -ne 0) { throw '收錄清單發布失敗' }

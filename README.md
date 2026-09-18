@@ -1,149 +1,78 @@
 # ArcheRage Addon Installer
 
-給親友用的 ArcheRage 插件安裝與更新工具。單一 exe，不用安裝。
+Windows x64 的 ArcheRage 插件管理工具。下載單一 exe 即可瀏覽、安裝、更新與移除插件，無須登入或提供 GitHub 權杖。
 
-語言規則：僅遊戲內實際顯示的文字使用簡體中文；其餘介面、文件與開發溝通一律使用繁體中文，後續碰到不符合規則的文字時一併修正。完整規則見 [AGENTS.md](AGENTS.md)。第三方授權條款保留原文。
+## 下載與使用
 
-私人倉庫：[BaiHaoWei666/archerage-addons-installer](https://github.com/BaiHaoWei666/archerage-addons-installer)。
+1. 到 [最新正式 Release](https://github.com/BaiHaoWei666/archerage-addons-installer/releases/latest) 下載 `ArcheRageAddonInstaller.exe`。
+2. 開啟後確認「設定」中的遊戲 `Addon` 資料夾，預設為 Windows「文件」下的 `ArcheRage/Addon`。
+3. 在「瀏覽」選擇插件並安裝；「已安裝」可更新或移除。
+4. 回到遊戲重新載入插件，或重新登入。
 
-Go + Wails 版 Windows x64 exe 包含 Logo 與網頁介面，使用 Windows 系統內建字型，不內嵌或額外下載字型，不需要 .NET。
+程式使用 WebView2；缺少時會提示安裝。安裝器尚未簽署，Windows 可能顯示來源確認。
 
-目前收錄的插件：
+更新既有插件或移除前會備份到 `Addon/Backup/`。更新覆蓋封裝中的檔案，保留使用者另外加入的檔案。Junction／符號連結開發目錄會拒絕更新與移除。
 
-| 插件 | 說明 |
-|---|---|
-| infotracker2 | 資訊追蹤：任務、每日挑戰、角色資訊、今日淨收入、副本 |
-| commercetracker | 經商追蹤：特產包比率、售價、材料成本與利潤 |
+設定位於 `%AppData%/ArcheRageAddonInstaller/settings.json`。舊版設定中的權杖欄位不再讀取，重新儲存設定時會移除。從舊版遷移時，建議直接下載新版 exe；舊版使用的 catalog 已停止維護。
 
-## 使用方式
+## 更新來源
 
-1. 向提供者索取 `ArcheRageAddonInstaller.exe`（repo 是私人的，親友無法直接從 GitHub 下載），放在任何資料夾（建議不要放在 OneDrive 裡）。
-2. 雙擊執行。第一次執行時 Windows 可能顯示「Windows 已保護您的電腦」：
-   點 **其他資訊** → **仍要執行**。這是因為程式沒有購買數位簽章，只有第一次會出現。
-3. 首次開啟會顯示「開始使用：貼上存取權杖」。向提供者取得權杖，貼上後按「儲存並連線」。
-   程式會自動找到 `文件\ArcheRage\Addon`；找不到時到「設定」選擇。
-4. 「瀏覽」頁可以搜尋、依分類篩選插件，點選後會顯示說明和更新紀錄，按「安裝」或「更新」。
-5. 「已安裝」頁可以一次「全部更新」，或解除安裝。
-6. 在遊戲裡重新載入插件，或重新登入。
+所有線上安裝資料均來自公開 GitHub Release：
 
-- 安裝、更新或解除安裝前，會先備份到 `Addon\Backup\插件名_日期時間`。
-- 更新只會覆蓋插件自帶的檔案，不會刪除你自己加的檔案。
-- 安裝工具有新版時，會詢問是否自動更新。
-- 出現「存取權杖無效或已過期」時，到「設定 → 存取權杖」貼上提供者給的新權杖。
-- 介面使用 Microsoft Edge WebView2（Windows 10/11 通常已內建）；缺少時程式會提示下載。
-- 設定存在 `%AppData%\ArcheRageAddonInstaller\settings.json`（權杖以 Windows DPAPI 加密）。
+- 收錄清單：本 repo 的 `registry` 預發布附件 `repositories.json`。
+- 安裝器：本 repo 最新正式 Release 的 exe，以 tag 判斷版本。
+- 插件：收錄 repo 各自最新正式 Release 的 manifest、ZIP、說明及圖示。
 
-## 維護者
+安裝器不讀取 Git 分支中的檔案，也不下載 GitHub 自動產生的 Source code ZIP。每次重新整理會固定各來源的 Release；安裝時核對 ZIP 的 SHA-256 及內含版本。個別插件來源失敗時顯示警告，其餘插件仍可使用。匿名 GitHub API 有查詢額度，遇到限制請稍後再試。
 
-### 開發環境
+主專案只維護管理器與來源清單；插件功能說明、程式、測試與版本由各 repo 自行維護。收錄項目以 [repositories.json](repositories.json) 為準。
 
-- [Go](https://go.dev/dl/) 1.26 以上（本機驗證使用 Go 1.27.0）
-- Wails CLI：`go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0`
-- git
+## 開發
 
-### 存取權杖
-
-repo 是私人的，安裝工具要用 GitHub 權杖讀取 Release。建立 **fine-grained personal access token**：
-
-- Repository access：**Only select repositories** → 只選這個 repo
-- Permissions：**Contents: Read-only**（Metadata: Read-only 會自動加上）
-- 設定到期日，到期前換新
-
-權杖只能由使用者在「設定 → 存取權杖」貼上，以 Windows DPAPI 加密存於本機。
-程式不內嵌權杖，也不讀取環境變數權杖。未設定時不發送線上下載請求，而是開啟設定指引。
-清除權杖後會回到指引頁。到期或失效時，設定頁會顯示錯誤，貼上新權杖即可重試。
-
-GitHub Actions 僅使用 GitHub 自動提供的工作流程憑證上傳 Release，該憑證不會編入 exe。
-
-### 發佈新版本
-
-調整版本前依 [Bump 版本規則](AGENTS.md#bump-版本規則) 同步並驗證版本檔，包含遊戲開發連結讀到的版本。
-
-先完成插件的版本、更新紀錄與 catalog 封裝，獨立提交並推送；安裝器 release 另行處理，規則見 [AGENTS.md](AGENTS.md#發布分流)。
+需求：Git、Go（版本見 `installer/go.mod`）、PowerShell，以及 Wails CLI。
 
 ```powershell
-# 插件收尾：修改有變動的插件版本與更新紀錄，安裝器版本維持原值。
-# 開發資料夾已使用 Junction 時直接修改 addons/，不執行同步腳本。
-./scripts/build-release.ps1 -SkipInstaller
+go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
 ./scripts/test.ps1
-# 僅暫存本次插件、測試、manifest 與相關 catalog 檔案。
-git commit -m "chore(infotracker2): bump version to X.Y.Z"
-git push origin main
-```
-
-使用者另行要求發布安裝器後，才調高 `installer.version`，執行以下流程：
-
-```powershell
 ./scripts/build-release.ps1
-./scripts/test.ps1
-# 僅暫存安裝器版本及相關發布資料，獨立提交。
-git commit -m "chore(installer): bump version to X.Y.Z"
-git push origin main
-# 使用本次安裝器版本建立單一 tag，另一次推送觸發 release workflow。
-git tag vX.Y.Z
-git push origin refs/tags/vX.Y.Z
 ```
 
-程式依 latest Release 的 tag 讀取該版本的 catalog/，不會讀到 main 尚未發佈的修改。
-發佈前務必提交 catalog/；程式比對其中 manifest.json 的版本號。
+產物：`dist/ArcheRageAddonInstaller.exe`。前端原始檔位於 `installer/frontend/dist/`，直接編入 exe，無 npm 建置步驟。
 
-### 新增插件
+需要同時開發收錄插件時執行：
 
-1. 在 `manifest.json` 的 `addons` 加一筆：
-
-   ```json
-   {
-     "name": "資料夾名稱",
-     "displayName": "顯示名稱",
-     "version": "1.0.0",
-     "category": "分類",
-     "author": "作者（可省略）",
-     "description": "一句話說明",
-     "changelog": [
-       { "version": "1.0.0", "date": "2026-09-17", "notes": ["首次發佈"] }
-     ]
-   }
-   ```
-
-2. （可選）圖示放在 `meta/資料夾名稱/icon.png`，建議 144×144。沒有圖示時會顯示文字圖示。
-3. 說明頁使用插件資料夾裡的 `README.md`。
-4. 執行 `./scripts/sync-addons.ps1`。
-
-### 專案結構
-
-```
-addons/                 插件原始檔（由 sync-addons.ps1 同步）
-meta/                   插件圖示
-catalog/                已打包的插件、清單、圖示與說明（隨版本提交，不上傳 Release）
-manifest.json           插件清單、版本號、分類、更新紀錄
-scripts/
-  sync-addons.ps1       從遊戲資料夾同步插件
-  build-release.ps1     打包 dist/
-installer/              安裝工具（Go + Wails v2，介面用系統的 WebView2）
-  *.go                  後端：下載、安裝、備份、自我更新、權杖
-  frontend/dist/        介面（HTML/CSS/JS，編進 exe）
-  build/                exe 圖示與 Windows 資源
-.github/workflows/      打 tag 時自動發佈
+```powershell
+./scripts/setup-addons.ps1
 ```
 
-### 運作方式
+腳本依 URL 的 repo 名稱 clone 到 `addons/<repo名稱>/`，保留已存在目錄；各目錄為獨立 Git repo，主專案忽略整個 `addons/`。若 repo 名稱與 manifest 的安裝名稱不同，遊戲連結應使用 manifest 的 `name`。插件依各自的 AGENTS.md、README 及測試流程維護。
 
-使用者貼上權杖後，程式透過 GitHub API 取得最新 Release 的 tag，再讀取私人倉庫該 tag 的 catalog/。
-只有安裝工具自己的 exe 從 Release 下載。Release 頁面只列出 exe 與 GitHub 自動產生的 Source code。
-沒有權杖時顯示設定指引；只有明確指定 `--source` 的本機／自訂來源測試不需要權杖。
+`--source <資料夾或網址>` 可使用舊式彙整 manifest 和同目錄附件做隔離測試；`--addon-dir <資料夾>` 暫時指定安裝位置，不改設定。
 
-| 倉庫 catalog/ 檔案 | 用途 |
+## 收錄與發布
+
+新增第三方插件，只需修改 URL 清單；對方不需要主專案寫入權限。格式、附件與工作流程約定見 [插件發布格式](docs/addon-format.md)。
+
+- 修改 `repositories.json` 並推送 main：workflow 更新 `registry` 的清單附件，無須重發 exe。
+- 插件作者發布自己的正式 Release：使用者重新整理即可取得該版本，無須修改主專案。
+- 發布安裝器：同步根目錄 `manifest.json` 與 `installer/wails.json` 的版本，更新 `RELEASE_NOTES.md`，通過測試與建置後提交。依 AGENTS.md 的發布授權規則，推送單一 `v<版本>` tag 觸發 Release。
+
+`registry` 是專用的可更新預發布，僅供清單使用，不是安裝器版本。重新上傳附件的短暫期間可能讀取失敗，稍後重新整理即可。
+
+## 專案結構
+
+| 路徑 | 用途 |
 |---|---|
-| `manifest.json` | 插件清單與版本 |
-| `插件名.zip` | 插件本體（內含發佈時產生的 `version.txt`） |
-| `插件名.png` / `插件名.md` | 圖示與說明，安裝前就能顯示 |
+| `installer/` | Go + Wails 安裝器及前端 |
+| `repositories.json` | 公開插件 repo URL 陣列 |
+| `manifest.json` | 安裝器版本 |
+| `scripts/` | 建置、測試、清單檢查與開發環境初始化 |
+| `docs/addon-format.md` | 第三方插件整合規格 |
+| `addons/` | 忽略追蹤的本機獨立 repo |
+| `.github/workflows/` | CI、安裝器 Release、收錄清單發布 |
 
-本機版本讀自每個插件資料夾裡的 `version.txt`。
+## 文字與第三方元件
 
-v1.0.1 及更早版本使用舊的 Release 附件格式；移除舊附件後，請手動下載 v1.0.2 或更新的 exe。原有加密 token 設定可沿用。
+遊戲內中文使用簡體；管理器、文件、註解及版本說明使用繁體。專有名稱保留原樣。
 
-### 第三方元件
-
-- [Wails](https://wails.io/)（MIT）、[goldmark](https://github.com/yuin/goldmark)（MIT）、[golang.org/x/sys](https://pkg.go.dev/golang.org/x/sys)（BSD）
-- 介面使用系統字型：優先微軟正黑體，其次微軟雅黑、Segoe UI；等寬文字優先使用 Cascadia Mono 或 Consolas。
-- 側欄與 exe 圖示使用 ArcheRage 遊戲標誌，僅供私人使用。
+使用 Wails（MIT）、goldmark（MIT）與 golang.org/x/sys（BSD）；各自授權見上游專案。介面使用 Windows 系統字型。ArcheRage 標誌與遊戲資源的權利歸原權利人。

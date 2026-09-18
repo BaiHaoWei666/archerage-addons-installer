@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,23 +16,15 @@ import (
 	"time"
 )
 
-// ReleaseSource 是發佈檔案的來源：
-//   - 有權杖：透過 GitHub API 讀取最新 Release 的附件（private repo 必須這樣）
-//   - 沒有權杖：要求使用者先在設定頁貼上，不發送線上請求
-//   - --source 指定本機資料夾或網址：測試用
+// ReleaseSource 將公開 Release 附件解析成安裝器使用的檔案清單。
 type ReleaseSource struct {
 	localDir string
 	baseURL  string
-	custom   bool
-	token    func() string
 	client   *http.Client
-
-	mu         sync.Mutex
-	assets     map[string]string // 附件名稱 → API 下載網址（權杖模式）
-	releaseTag string
-	files      map[string][]byte // 小檔案快取；nil 代表找不到
+	mu       sync.Mutex
+	assets   map[string]string
+	files    map[string][]byte
 }
-
 type httpError struct {
 	Status int
 	File   string
@@ -39,61 +32,189 @@ type httpError struct {
 
 func (e *httpError) Error() string { return fmt.Sprintf("HTTP %d：%s", e.Status, e.File) }
 
-var errAssetNotFound = errors.New("asset not found")
-var errTokenRequired = errors.New("請先在設定頁貼上存取權杖，才能讀取私有插件清單。")
+var errAssetNotFound = errors.New("找不到 Release 附件")
 
-func NewReleaseSource(override string, token func() string) *ReleaseSource {
-	s := &ReleaseSource{
-		token:  token,
-		client: &http.Client{Timeout: 10 * time.Minute},
-		files:  map[string][]byte{},
-	}
-	switch {
-	case override == "":
-		s.baseURL = "https://github.com/" + repo + "/releases/latest/download/"
-	case isDir(override):
+func NewReleaseSource(override string) *ReleaseSource {
+	s := &ReleaseSource{client: &http.Client{Timeout: 10 * time.Minute}, assets: map[string]string{}, files: map[string][]byte{}}
+	if isDir(override) {
 		s.localDir, _ = filepath.Abs(override)
-	default:
+	} else if override != "" {
 		s.baseURL = strings.TrimSuffix(override, "/") + "/"
-		s.custom = true
 	}
 	return s
 }
-
-func isDir(p string) bool {
-	info, err := os.Stat(p)
-	return err == nil && info.IsDir()
-}
-
+func isDir(p string) bool                 { info, err := os.Stat(p); return err == nil && info.IsDir() }
 func (s *ReleaseSource) IsLocal() bool    { return s.localDir != "" }
 func (s *ReleaseSource) Location() string { return s.localDir }
-func (s *ReleaseSource) NeedsToken() bool { return s.localDir == "" && !s.custom && s.token() == "" }
 
-func (s *ReleaseSource) useAPI() bool {
-	return s.localDir == "" && !s.custom && s.token() != ""
+type githubRelease struct {
+	Tag        string `json:"tag_name"`
+	Draft      bool   `json:"draft"`
+	Prerelease bool   `json:"prerelease"`
+	Assets     []struct {
+		Name string `json:"name"`
+		URL  string `json:"browser_download_url"`
+	} `json:"assets"`
 }
 
-// LoadManifest 重新讀取 manifest.json，並清除快取。
-func (s *ReleaseSource) LoadManifest(ctx context.Context) (*Manifest, error) {
-	s.mu.Lock()
-	s.assets = nil
-	s.releaseTag = ""
-	s.files = map[string][]byte{}
-	s.mu.Unlock()
+func repositoryName(raw string) (string, error) {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "https" || u.Host != "github.com" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+		return "", fmt.Errorf("插件來源必須是公開 GitHub repo 網址：%s", raw)
+	}
+	parts := strings.Split(strings.Trim(strings.TrimSuffix(u.Path, ".git"), "/"), "/")
+	if len(parts) != 2 || !safeName(parts[0]) || !safeName(parts[1]) {
+		return "", fmt.Errorf("GitHub repo 網址格式錯誤：%s", raw)
+	}
+	return strings.Join(parts, "/"), nil
+}
+func (s *ReleaseSource) readJSON(ctx context.Context, location string, out interface{}) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	body, _, err := s.get(ctx, location, location, "application/vnd.github+json")
+	if err != nil {
+		return err
+	}
+	defer body.Close()
+	if err := json.NewDecoder(io.LimitReader(body, 2<<20)).Decode(out); err != nil {
+		return fmt.Errorf("JSON 格式錯誤：%w", err)
+	}
+	return nil
+}
+func (s *ReleaseSource) release(ctx context.Context, repository, selector string, stable bool) (*githubRelease, map[string]string, error) {
+	var r githubRelease
+	if err := s.readJSON(ctx, "https://api.github.com/repos/"+repository+"/releases/"+selector, &r); err != nil {
+		return nil, nil, err
+	}
+	if r.Tag == "" || r.Draft || (stable && r.Prerelease) {
+		return nil, nil, fmt.Errorf("%s 沒有有效的正式 Release", repository)
+	}
+	assets := map[string]string{}
+	for _, a := range r.Assets {
+		u, err := url.Parse(a.URL)
+		prefix := "/" + repository + "/releases/download/" + r.Tag + "/"
+		if err != nil || u.Scheme != "https" || u.Host != "github.com" || u.User != nil || u.RawQuery != "" || u.Fragment != "" || !strings.HasPrefix(u.Path, prefix) {
+			return nil, nil, fmt.Errorf("%s 的 Release 附件網址不合法", repository)
+		}
+		if _, exists := assets[a.Name]; exists {
+			return nil, nil, fmt.Errorf("Release 附件名稱重複：%s", a.Name)
+		}
+		assets[a.Name] = a.URL
+	}
+	return &r, assets, nil
+}
 
-	body, _, err := s.open(ctx, "manifest.json")
+// LoadManifest 固定本次各 repo 的 Release；直到下次重新整理才切換版本。
+func (s *ReleaseSource) LoadManifest(ctx context.Context) (*Manifest, error) {
+	if s.localDir != "" || s.baseURL != "" {
+		body, _, err := s.open(ctx, "manifest.json")
+		if err != nil {
+			return nil, err
+		}
+		defer body.Close()
+		var m Manifest
+		if err := json.NewDecoder(io.LimitReader(body, 2<<20)).Decode(&m); err != nil {
+			return nil, err
+		}
+		s.mu.Lock()
+		s.files = map[string][]byte{}
+		s.mu.Unlock()
+		return &m, nil
+	}
+	_, registryAssets, err := s.release(ctx, repo, "tags/registry", false)
 	if err != nil {
 		return nil, err
 	}
-	defer body.Close()
-	var m Manifest
-	if err := json.NewDecoder(body).Decode(&m); err != nil {
-		return nil, fmt.Errorf("manifest.json 格式錯誤：%w", err)
+	registryURL, ok := registryAssets["repositories.json"]
+	if !ok {
+		return nil, fmt.Errorf("%w：repositories.json", errAssetNotFound)
 	}
-	return &m, nil
+	var repositories []string
+	if err := s.readJSON(ctx, registryURL, &repositories); err != nil {
+		return nil, err
+	}
+	if repositories == nil {
+		return nil, fmt.Errorf("收錄清單必須是 URL 陣列")
+	}
+	m := &Manifest{Addons: []AddonInfo{}}
+	assets := map[string]string{}
+	if r, files, err := s.release(ctx, repo, "latest", true); err != nil {
+		m.Warnings = append(m.Warnings, "安裝器更新檢查失敗："+s.describeError(err))
+	} else if _, valid := parseVersion(r.Tag); !valid || files[exeName] == "" {
+		m.Warnings = append(m.Warnings, "安裝器 Release 缺少有效版本或執行檔")
+	} else {
+		m.Installer.Version = strings.TrimPrefix(r.Tag, "v")
+		assets[exeName] = files[exeName]
+	}
+	seenRepos := map[string]bool{}
+	seenNames := map[string]bool{}
+	for _, raw := range repositories {
+		repository, err := repositoryName(raw)
+		if err != nil {
+			return nil, err
+		}
+		key := strings.ToLower(repository)
+		if seenRepos[key] {
+			return nil, fmt.Errorf("收錄清單重複：%s", repository)
+		}
+		seenRepos[key] = true
+		addon, files, err := s.loadAddon(ctx, repository)
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		if err != nil {
+			m.Warnings = append(m.Warnings, repository+"："+s.describeError(err))
+			continue
+		}
+		key = strings.ToLower(addon.Name)
+		if seenNames[key] {
+			return nil, fmt.Errorf("不同來源使用相同插件名稱：%s", addon.Name)
+		}
+		seenNames[key] = true
+		m.Addons = append(m.Addons, *addon)
+		for _, ext := range []string{".zip", ".md", ".png"} {
+			name := addon.Name + ext
+			if location := files[name]; location != "" {
+				assets[name] = location
+			}
+		}
+	}
+	s.mu.Lock()
+	s.assets = assets
+	s.files = map[string][]byte{}
+	s.mu.Unlock()
+	return m, nil
+}
+func (s *ReleaseSource) loadAddon(ctx context.Context, repository string) (*AddonInfo, map[string]string, error) {
+	r, assets, err := s.release(ctx, repository, "latest", true)
+	if err != nil {
+		return nil, nil, err
+	}
+	location := assets["manifest.json"]
+	if location == "" {
+		return nil, nil, fmt.Errorf("%w：manifest.json", errAssetNotFound)
+	}
+	var a AddonInfo
+	if err := s.readJSON(ctx, location, &a); err != nil {
+		return nil, nil, err
+	}
+	if a.SchemaVersion != 1 || !safeName(a.Name) || strings.EqualFold(a.Name, "Backup") {
+		return nil, nil, fmt.Errorf("插件 manifest 格式或名稱不合法")
+	}
+	if _, valid := parseVersion(a.Version); !valid || r.Tag != "v"+a.Version {
+		return nil, nil, fmt.Errorf("Release tag 與 manifest 版本不一致")
+	}
+	hash, err := hex.DecodeString(a.SHA256)
+	if err != nil || len(hash) != 32 {
+		return nil, nil, fmt.Errorf("插件 manifest 缺少有效的 SHA-256")
+	}
+	if assets[a.Name+".zip"] == "" {
+		return nil, nil, fmt.Errorf("%w：%s.zip", errAssetNotFound, a.Name)
+	}
+	return &a, assets, nil
 }
 
-// TryGetFile 讀取小檔案（圖示、說明），找不到或失敗時回傳 nil。
+// TryGetFile 讀取圖示與說明；不存在時讓介面使用預設內容。
 func (s *ReleaseSource) TryGetFile(ctx context.Context, name string) []byte {
 	s.mu.Lock()
 	data, cached := s.files[name]
@@ -101,34 +222,19 @@ func (s *ReleaseSource) TryGetFile(ctx context.Context, name string) []byte {
 	if cached {
 		return data
 	}
-
 	body, _, err := s.open(ctx, name)
-	if err != nil {
-		if isNotFound(err) {
-			s.cacheFile(name, nil)
-		}
-		return nil // 連線失敗之類的錯誤不快取，下次重試
-	}
-	defer body.Close()
-	data, err = io.ReadAll(io.LimitReader(body, 20<<20))
 	if err != nil {
 		return nil
 	}
-	s.cacheFile(name, data)
-	return data
-}
-
-func (s *ReleaseSource) cacheFile(name string, data []byte) {
+	defer body.Close()
+	data, err = io.ReadAll(io.LimitReader(body, (20<<20)+1))
+	if err != nil || len(data) > 20<<20 {
+		return nil
+	}
 	s.mu.Lock()
 	s.files[name] = data
 	s.mu.Unlock()
-}
-
-func isNotFound(err error) bool {
-	var he *httpError
-	return (errors.As(err, &he) && he.Status == http.StatusNotFound) ||
-		errors.Is(err, errAssetNotFound) ||
-		errors.Is(err, os.ErrNotExist)
+	return data
 }
 
 // DownloadProgress 記錄已寫入的位元組數；Total <= 0 代表來源未提供總大小。
@@ -205,85 +311,42 @@ func (s *ReleaseSource) Download(ctx context.Context, name, dest string, progres
 }
 
 func (s *ReleaseSource) open(ctx context.Context, name string) (io.ReadCloser, int64, error) {
-	if s.NeedsToken() {
-		return nil, 0, errTokenRequired
+	if !safeName(name) {
+		return nil, 0, fmt.Errorf("不合法的附件名稱：%s", name)
 	}
 	if s.localDir != "" {
 		f, err := os.Open(filepath.Join(s.localDir, name))
 		if err != nil {
 			return nil, 0, err
 		}
-		info, _ := f.Stat()
+		info, err := f.Stat()
+		if err != nil {
+			f.Close()
+			return nil, 0, err
+		}
 		return f, info.Size(), nil
 	}
-
-	if !s.useAPI() {
-		return s.get(ctx, s.baseURL+name, name, "")
-	}
-
-	url, err := s.assetURL(ctx, name)
-	if err != nil {
-		return nil, 0, err
-	}
-	accept := "application/octet-stream"
-	if name != exeName {
-		accept = "application/vnd.github.raw+json"
-	}
-	return s.get(ctx, url, name, accept)
-}
-
-// assetURL 從最新 Release 的附件清單找出檔案的 API 網址。
-func (s *ReleaseSource) assetURL(ctx context.Context, name string) (string, error) {
-	s.mu.Lock()
-	assets := s.assets
-	tag := s.releaseTag
-	s.mu.Unlock()
-
-	if assets == nil {
-		body, _, err := s.get(ctx, "https://api.github.com/repos/"+repo+"/releases/latest", "releases/latest", "application/vnd.github+json")
+	location := s.baseURL + name
+	if s.baseURL == "" {
+		var err error
+		location, err = s.assetURL(ctx, name)
 		if err != nil {
-			return "", err
+			return nil, 0, err
 		}
-		defer body.Close()
-		var release struct {
-			TagName string `json:"tag_name"`
-			Assets  []struct {
-				Name string `json:"name"`
-				URL  string `json:"url"`
-			} `json:"assets"`
-		}
-		if err := json.NewDecoder(body).Decode(&release); err != nil {
-			return "", fmt.Errorf("GitHub 回應格式錯誤：%w", err)
-		}
-		assets = map[string]string{}
-		tag = release.TagName
-		if tag == "" {
-			return "", fmt.Errorf("GitHub Release 缺少版本標籤")
-		}
-		for _, a := range release.Assets {
-			assets[a.Name] = a.URL
-		}
-		s.mu.Lock()
-		s.assets = assets
-		s.releaseTag = tag
-		s.mu.Unlock()
 	}
-
-	if name != exeName {
-		if !safeName(name) {
-			return "", fmt.Errorf("Invalid catalog filename")
-		}
-		return "https://api.github.com/repos/" + repo + "/contents/catalog/" + url.PathEscape(name) + "?ref=" + url.QueryEscape(tag), nil
-	}
-	url, ok := assets[name]
-	if !ok {
+	return s.get(ctx, location, name, "")
+}
+func (s *ReleaseSource) assetURL(_ context.Context, name string) (string, error) {
+	s.mu.Lock()
+	location := s.assets[name]
+	s.mu.Unlock()
+	if location == "" {
 		return "", fmt.Errorf("%w：%s", errAssetNotFound, name)
 	}
-	return url, nil
+	return location, nil
 }
-
-func (s *ReleaseSource) get(ctx context.Context, url, name, accept string) (io.ReadCloser, int64, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+func (s *ReleaseSource) get(ctx context.Context, location, name, accept string) (io.ReadCloser, int64, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, location, nil)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -291,14 +354,9 @@ func (s *ReleaseSource) get(ctx context.Context, url, name, accept string) (io.R
 	if accept != "" {
 		req.Header.Set("Accept", accept)
 	}
-	if strings.HasPrefix(url, "https://api.github.com/") {
+	if req.URL.Host == "api.github.com" {
 		req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-		if t := s.token(); t != "" {
-			// 轉址到下載伺服器時，Go 會自動拿掉這個標頭
-			req.Header.Set("Authorization", "Bearer "+t)
-		}
 	}
-
 	resp, err := s.client.Do(req)
 	if err != nil {
 		return nil, 0, err
@@ -309,23 +367,18 @@ func (s *ReleaseSource) get(ctx context.Context, url, name, accept string) (io.R
 	}
 	return resp.Body, resp.ContentLength, nil
 }
-
-// describeError 把錯誤轉成給使用者看的訊息。
 func (s *ReleaseSource) describeError(err error) string {
-	hasToken := s.token() != ""
 	var he *httpError
 	switch {
-	case errors.As(err, &he) && he.Status == http.StatusUnauthorized:
-		return "存取權杖無效或已過期，請到「設定」貼上新的權杖。"
-	case errors.As(err, &he) && (he.Status == http.StatusForbidden || he.Status == http.StatusTooManyRequests):
-		return "GitHub 拒絕存取：權杖權限不足，或查詢次數已達上限，請稍後再試。"
-	case s.localDir == "" && isNotFound(err):
-		if hasToken {
-			return "找不到發佈檔案：可能還沒有發佈任何版本，或權杖沒有這個 repo 的讀取權限。"
-		}
-		return "找不到發佈檔案。repo 是私人的話，請到「設定」貼上存取權杖。"
 	case errors.As(err, &he):
-		return fmt.Sprintf("GitHub 回應錯誤（HTTP %d）。", he.Status)
+		switch he.Status {
+		case http.StatusForbidden, http.StatusTooManyRequests:
+			return "GitHub 暫時拒絕存取或查詢次數已達上限，請稍後再試。"
+		case http.StatusNotFound:
+			return "找不到公開 Release 或附件，請確認專案已公開並完成發布。"
+		default:
+			return fmt.Sprintf("下載失敗（HTTP %d）。", he.Status)
+		}
 	case errors.Is(err, context.DeadlineExceeded):
 		return "連線逾時，請稍後再試。"
 	case errors.Is(err, os.ErrNotExist):
@@ -335,7 +388,7 @@ func (s *ReleaseSource) describeError(err error) string {
 	}
 	var ue *url.Error
 	if errors.As(err, &ue) {
-		return "無法連線到 GitHub：" + err.Error()
+		return "無法連線到下載來源：" + err.Error()
 	}
 	return err.Error()
 }

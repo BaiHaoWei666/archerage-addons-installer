@@ -5,4 +5,4 @@ installer/build/bin/
 installer/frontend/wailsjs/
 .vs/
 .vscode/
-/addons/*/version.txt
+/addons/

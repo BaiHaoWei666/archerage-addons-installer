@@ -161,6 +161,9 @@ function renderList() {
     if (!d.dirOk) {
       html += `<div class="notice warn">${svg('alert')}<div><b>找不到插件資料夾</b><span>請到設定選擇 ArcheRage 的 Addon 資料夾。</span></div><button class="btn small" data-act="nav" data-view="settings">設定</button></div>`;
     }
+    for (const warning of d.warnings || []) {
+      html += `<div class="notice warn">${svg("alert")}<div><b>部分來源無法載入</b><span>${esc(warning)}</span></div></div>`;
+    }
     const items = visibleAddons();
     if (!items.length) {
       const text = isInstalled && !installed.length ? '還沒有安裝任何插件。' : '沒有符合條件的插件。';
@@ -305,38 +308,14 @@ function renderSettings() {
   const source = d.source
     ? `<b>本機測試：${esc(d.source)}</b>`
     : `<a href="https://github.com/${esc(d.repo)}">github.com/${esc(d.repo)}</a>`;
-  const tokenSources = {
-    settings: '設定頁的權杖',
-  };
-  const t = d.token || {};
-  const tokenStatus = t.source
-    ? `<b>${esc(tokenSources[t.source] || t.source)}</b>${t.hint ? `<span class="muted-text">（末四碼 ${esc(t.hint)}）</span>` : ''}`
-    : '<b class="warn-text">未設定</b>';
   const installerButtons = u.hasUpdate
     ? `<button class="btn primary" data-act="selfUpdate"${busy}>${svg('download')}更新到 v${esc(u.latest)}</button>`
     : `<button class="btn" data-act="refresh"${busy}>${svg('refresh')}檢查更新</button>
        <span class="muted-text">${u.latest ? '已是最新版本' : ''}</span>`;
 
-  // 重新繪製時保留輸入到一半的權杖
-  const typedToken = $('#tokenInput')?.value ?? '';
-  const tokenCard = `
-      <section class="card set-card" id="tokenSetup">
-        <h3>${d.needsToken ? '開始使用：貼上存取權杖' : '存取權杖'}</h3>
-        <div class="kv"><span>目前使用</span><span class="kv-value">${tokenStatus}</span></div>
-        <p class="muted-text">這是私人插件倉庫。請向提供者取得權杖，貼上後按「儲存並連線」，即可載入插件清單。</p>
-        <p class="muted-text">權杖只會加密儲存在這台電腦；下次開啟不必重貼。到期或撤銷後，請在此更換。</p>
-        ${d.error && !d.source ? `<p role="alert" class="warn-text">${esc(d.error)}</p>` : ''}
-        <div class="btn-row">
-          <input id="tokenInput" aria-label="GitHub 存取權杖" class="text-input" type="password" placeholder="貼上提供者給你的 token" autocomplete="off" spellcheck="false"${busy}>
-          <button class="btn primary" data-act="saveToken"${busy}>儲存並連線</button>
-          ${t.source === 'settings' ? `<button class="btn ghost" data-act="clearToken"${busy}>清除</button>` : ''}
-        </div>
-      </section>`;
-
   $('#settingsPane').innerHTML = `
     <div class="settings">
       <h1>設定</h1>
-      ${tokenCard}
       <section class="card set-card">
         <h3>插件資料夾</h3>
         <div class="path${d.dirOk ? '' : ' bad'}">${svg(d.dirOk ? 'folder' : 'alert')}<span>${esc(d.addonDir)}</span></div>
@@ -364,7 +343,6 @@ function renderSettings() {
         </ul>
       </section>
     </div>`;
-  $('#tokenInput').value = typedToken;
 }
 
 function formatBytes(value) {
@@ -471,26 +449,6 @@ const actions = {
   browseDir: () => post({ type: 'browseDir' }),
   resetDir: () => post({ type: 'resetDir' }),
   selfUpdate: () => post({ type: 'selfUpdate' }),
-  saveToken: () => {
-    const input = $('#tokenInput');
-    const token = input.value.trim();
-    if (!token) {
-      toast('warn', '請先貼上權杖。');
-      input.focus();
-      return;
-    }
-    input.value = '';
-    post({ type: 'saveToken', token });
-  },
-  clearToken: async () => {
-    const ok = await confirmModal({
-      title: '清除權杖？',
-      text: '清除後會改用內建權杖；沒有內建權杖時，將無法讀取私人 repo。',
-      okText: '清除',
-      danger: true,
-    });
-    if (ok) post({ type: 'clearToken' });
-  },
   toggleOlder: () => { S.showOlder = !S.showOlder; renderDetail(); },
 };
 
@@ -531,7 +489,6 @@ $('#sort').addEventListener('change', e => { S.sort = e.target.value; renderList
 function onMessage(m) {
   switch (m.type) {
     case 'state': {
-      const wasTokenRequired = S.data?.needsToken;
       if (m.generation !== S.generation) {
         // 插件清單重新載入過：說明和圖示重新抓
         S.generation = m.generation;
@@ -543,8 +500,6 @@ function onMessage(m) {
         }
       }
       S.data = m;
-      if (m.needsToken || (!m.source && !m.loaded && m.error)) S.view = 'settings';
-      else if (wasTokenRequired && m.loaded) S.view = 'browse';
       S.busy = m.busy ? { text: m.busy, progress: m.busyProgress, download: m.download } : null;
       if (S.selected && !find(S.selected)) S.selected = null;
       render();
@@ -574,9 +529,6 @@ function onMessage(m) {
 window.runtime?.EventsOn('msg', onMessage);
 // 切回視窗時重新讀取本機插件狀態
 window.addEventListener('focus', () => post({ type: 'state' }));
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && e.target.id === 'tokenInput') actions.saveToken();
-});
 
 document.querySelectorAll('[data-icon]').forEach(el => {
   el.innerHTML = el.dataset.icon === 'logo' ? LOGO : svg(el.dataset.icon);

@@ -9,8 +9,6 @@ import (
 // Settings 存在 %AppData%\ArcheRageAddonInstaller\settings.json，exe 放哪裡都不影響。
 type Settings struct {
 	AddonDir string `json:"addonDir,omitempty"`
-	// Token 是以 Windows DPAPI 加密（只有同一個 Windows 使用者能解開）後的 base64
-	Token string `json:"token,omitempty"`
 }
 
 func settingsPath() string {

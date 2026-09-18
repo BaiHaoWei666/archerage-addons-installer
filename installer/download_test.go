@@ -26,7 +26,7 @@ func TestDownloadStatistics(t *testing.T) {
 				fmt.Fprint(w, payload)
 			}))
 			defer server.Close()
-			src := NewReleaseSource(server.URL, func() string { return "" })
+			src := NewReleaseSource(server.URL)
 			dest := filepath.Join(t.TempDir(), "download.bin")
 			var reports []DownloadProgress
 			err := src.Download(context.Background(), "test.bin", dest, nil, func(p DownloadProgress) { reports = append(reports, p) })
@@ -78,7 +78,7 @@ func TestDownloadTruncated(t *testing.T) {
 		fmt.Fprint(w, "short")
 	}))
 	defer server.Close()
-	src := NewReleaseSource(server.URL, func() string { return "" })
+	src := NewReleaseSource(server.URL)
 	err := src.Download(context.Background(), "test.bin", filepath.Join(t.TempDir(), "out"), nil, func(p DownloadProgress) {
 		if p.Received >= p.Total {
 			t.Fatal("中斷下載不應回報完成")

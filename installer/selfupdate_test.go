@@ -37,7 +37,7 @@ func TestSelfUpdateHelper(t *testing.T) {
 		os.Exit(0)
 	}
 	os.Setenv("AR_TEST_SELF_MODE", "new")
-	src := NewReleaseSource(filepath.Join(dir, "release"), func() string { return "" })
+	src := NewReleaseSource(filepath.Join(dir, "release"))
 	err := replaceSelf(context.Background(), src, nil)
 	if mode == "bad" {
 		if err == nil {

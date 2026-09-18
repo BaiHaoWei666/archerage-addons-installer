@@ -3,6 +3,8 @@ package main
 import (
 	"archive/zip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -78,6 +80,21 @@ func installAddon(ctx context.Context, src *ReleaseSource, addonDir string, addo
 		return false, err
 	}
 
+	if addon.SHA256 != "" {
+		file, err := os.Open(zipPath)
+		if err != nil {
+			return false, err
+		}
+		hash := sha256.New()
+		_, err = io.Copy(hash, file)
+		file.Close()
+		if err != nil {
+			return false, err
+		}
+		if !strings.EqualFold(hex.EncodeToString(hash.Sum(nil)), addon.SHA256) {
+			return false, fmt.Errorf("插件 ZIP 的 SHA-256 與發布資料不符")
+		}
+	}
 	extractDir := filepath.Join(work, "extract")
 	if err := extractZip(zipPath, extractDir); err != nil {
 		return false, err
@@ -87,6 +104,12 @@ func installAddon(ctx context.Context, src *ReleaseSource, addonDir string, addo
 		return false, fmt.Errorf("%s.zip 裡找不到 %s 資料夾", addon.Name, addon.Name)
 	}
 
+	if addon.SHA256 != "" {
+		v := installedVersion(extractDir, addon.Name)
+		if v == nil || *v != addon.Version {
+			return false, fmt.Errorf("插件 ZIP 版本與發布資料不符")
+		}
+	}
 	target := filepath.Join(addonDir, addon.Name)
 	backedUp := false
 	if isDir(target) {

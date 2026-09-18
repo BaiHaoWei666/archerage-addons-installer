@@ -6,8 +6,9 @@ import (
 	"strings"
 )
 
-// Manifest 對應 GitHub Release 上的 manifest.json。
+// Manifest 是本次重新整理後的插件與安裝器版本快照。
 type Manifest struct {
+	Warnings  []string `json:"warnings,omitempty"`
 	Installer struct {
 		Version string `json:"version"`
 	} `json:"installer"`
@@ -15,6 +16,8 @@ type Manifest struct {
 }
 
 type AddonInfo struct {
+	SchemaVersion int    `json:"schemaVersion"`
+	SHA256        string `json:"sha256,omitempty"`
 	// Name 是插件資料夾名稱，也是 zip、圖示（.png）、說明（.md）的檔名。
 	Name        string           `json:"name"`
 	DisplayName string           `json:"displayName"`
