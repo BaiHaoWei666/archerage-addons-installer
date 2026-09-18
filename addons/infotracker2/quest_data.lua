@@ -5,7 +5,6 @@
 --   income  今日淨收入（field = 累計的欄位：gold | vocation | honor | exp）
 --   dungeon 副本（index = X2BattleField:GetInstanceListByKind(4) 裡的位置）
 --   assignment 每日挑戰（活動中心；slot = 第幾格）
--- 分類的 fixed = true：全部列出，不能勾選或排序（懸浮窗依格子位置顯示）
 -- 所有項目的 key 必須全局唯一（存檔用），同時也是 locale.lua 的文字 key
 ITV2.CATEGORIES = {
     {
@@ -72,7 +71,6 @@ ITV2.CATEGORIES = {
         key = "challenge",
         label = "CAT_CHALLENGE",
         kind = "assignment",
-        fixed = true,   -- 全部列出，不能勾選或排序
         -- 活動中心的每日挑戰（X2Achievement 的 TADT_TODAY）；slot = 第幾格
         items = {
             { key = "AS_1", slot = 1 },

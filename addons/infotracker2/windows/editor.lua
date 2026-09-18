@@ -259,26 +259,17 @@ local function LayoutItemList(cat, entries, dataOnly)
             trackedCount = trackedCount + 1
         end
 
-        local labelX = cat.fixed and 0 or LABEL_AFTER_CHECK
+        local labelX = LABEL_AFTER_CHECK
         if not dataOnly then
-            -- 固定分類不顯示勾選框與排序箭頭。
-            if cat.fixed then
-                labelX = 0
-                row.check:Show(false)
-                row.up:Show(false)
-                row.down:Show(false)
-            else
-                row.check.itemKey = key
-                row.check:SetChecked(S.IsTracked(key))
-                area:Place(row.check, 0, y + CHECK_OFFSET, UI.CHECK_HEIGHT)
+            row.check.itemKey = key
+            row.check:SetChecked(S.IsTracked(key))
+            area:Place(row.check, 0, y + CHECK_OFFSET, UI.CHECK_HEIGHT)
 
-                -- 右邊由右到左：上箭頭、下箭頭
-                row.up.catKey, row.up.orderIndex = cat.key, orderIndex
-                row.down.catKey, row.down.orderIndex = cat.key, orderIndex
-                local right = area:PlaceIcon(row.up, LIST_WIDTH, y, ROW_HEIGHT)
-                area:PlaceIcon(row.down, right, y, ROW_HEIGHT)
-            end
-
+            -- 右邊由右到左：上箭頭、下箭頭。
+            row.up.catKey, row.up.orderIndex = cat.key, orderIndex
+            row.down.catKey, row.down.orderIndex = cat.key, orderIndex
+            local right = area:PlaceIcon(row.up, LIST_WIDTH, y, ROW_HEIGHT)
+            area:PlaceIcon(row.down, right, y, ROW_HEIGHT)
         end
 
         -- 主項只用顏色表示狀態（同懸浮窗），能展開的項目前面用三角形標示展開狀態
@@ -459,7 +450,7 @@ function Editor.Refresh(dataOnly)
     LayoutTabs()
     area:BeginLayout()
     local cat = CATEGORIES[activeTab]
-    local isList = not isPanel and not cat.fixed
+    local isList = not isPanel
 
     summaryLabel:Show(isList)
     trackAllButton:Show(isList)
