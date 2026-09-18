@@ -311,6 +311,7 @@ local function LayoutItemList(cat, entries, dataOnly)
         HideItemRows(#order + 1)
         HideSubRows(subIndex + 1)
         summaryLabel:SetText(string.format(T("TRACKED_SUMMARY"), trackedCount, #order))
+        UI.SetButtonText(trackAllButton, T(#order > 0 and trackedCount == #order and "UNTRACK_ALL" or "TRACK_ALL"))
     end
     return y
 end
@@ -498,7 +499,15 @@ end
 UI.OnLeftClick(trackAllButton, function()
     local cat = CATEGORIES[activeTab]
     if cat ~= nil then
-        S.TrackAll(S.orderByCat[cat.key])
+        local keys = S.orderByCat[cat.key]
+        local allTracked = #keys > 0
+        for _, key in ipairs(keys) do
+            if not S.IsTracked(key) then
+                allTracked = false
+                break
+            end
+        end
+        S.TrackAll(keys, not allTracked)
         SaveAndRefresh()
     end
 end)

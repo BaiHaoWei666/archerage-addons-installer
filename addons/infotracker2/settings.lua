@@ -54,9 +54,10 @@ function S.SetTracked(key, on)
     return true
 end
 
-function S.TrackAll(keys)
+function S.TrackAll(keys, on)
+    if on == nil then on = true end
     for _, key in ipairs(keys) do
-        S.tracked[key] = true
+        S.SetTracked(key, on)
     end
 end
 
