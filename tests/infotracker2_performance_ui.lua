@@ -118,7 +118,7 @@ widgets.itv2PopRow30.IsMouseOver=function() error('掃描了不可見列') end
 for i=1,30 do Frame('itv2PopoutWindow',1000/60) end
 assert(not widgets.itv2PopPrev.visible,'離開後未隱藏按鈕')
 print('PASS: 60 FPS 懸停檢查從每秒 60 次降為 12 次，只檢查可見列')
--- 正式樣式：設定頁陰影、主子項字級差與追蹤分類的左緣對齊。
+-- 正式樣式：設定頁陰影、主子項字級差與追蹤分類的細項縮排。
 Click('itv2Tab1')
 for _,id in ipairs({'itv2ItemLabel1','itv2SubLabel1'}) do
     assert(widgets[id].style.shadow==true,'設定頁文字缺少陰影：'..id)
@@ -129,6 +129,8 @@ end
 local parent=widgets.itv2ItemLabel1
 local child=widgets.itv2SubLabel1
 assert(child.style.fontSize==parent.style.fontSize-1,'子項字級不是主項減一')
-assert(child.itv2Placement.x==parent.itv2Placement.x,'追蹤分類子項未對齊主項文字')
-assert(ITV2.StylePreview==nil,'試看功能未清除')
-print('PASS: 正式陰影、子項字級小一及追蹤分類左緣對齊')
+assert(child.itv2Placement.x==parent.itv2Placement.x+ITV2.UI.ChildIndent(parent,parent.style.fontSize),'追蹤分類子項未對齊主項第一個字')
+assert(ITV2.StylePreview==nil and ITV2.ExpandPreview==nil,'試看功能未清除')
+assert(parent.itv2Text:sub(1,#'▼ ')=='▼ ','展開主項缺少前置三角形')
+assert(child.itv2Text:sub(1,#'· ')=='· ','子項未使用圓點前綴')
+print('PASS: 正式陰影、子項字級小一及追蹤分類細項對齊主項文字')

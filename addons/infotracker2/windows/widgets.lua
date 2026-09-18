@@ -108,6 +108,16 @@ function UI.CreateEllipsisText(parent, id, fontSize)
     return box
 end
 
+-- 依主項展開符號的實際寬度對齊細項，字級不變時沿用量測結果。
+function UI.ChildIndent(label, fontSize)
+    if label.itv2IndentFont ~= fontSize then
+        local width = label.style:GetTextWidth("▼ ")
+        label.itv2ChildIndent = type(width) == "number" and width > 0 and width or (fontSize + 4)
+        label.itv2IndentFont = fontSize
+    end
+    return label.itv2ChildIndent
+end
+
 -- textbox 在 SetText 時就定下顏色，之後才改 style 顏色不會重畫。
 -- 所以先設顏色再設文字；顏色有變時先清空文字，確保文字沒變也會用新顏色重畫。
 function UI.SetStatusText(box, text, status)

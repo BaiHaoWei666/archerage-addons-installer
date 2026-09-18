@@ -13,7 +13,7 @@ ADDON:ImportAPI(API_TYPE.CHAT.id)
 ITV2 = {}
 
 -- 項目狀態：notStarted | inProgress | complete | neutral
--- 細項前面的狀態符號（懸浮窗主項只用顏色表示）
+-- 任務 ID 查詢輸出使用的狀態符號；介面清單以顏色表示狀態。
 ITV2.STATUS_PREFIX = {
     notStarted = "[ ] ",
     inProgress = "[~] ",

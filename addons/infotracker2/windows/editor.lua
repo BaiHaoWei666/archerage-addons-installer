@@ -18,14 +18,17 @@ local HEIGHT = 560
 local PADDING = 20
 local REFRESH_MS = 1000
 
-local ROW_HEIGHT = 26
-local ROW_GAP = 4
-local SUB_ROW_HEIGHT = 22
-local SUB_ROW_GAP = 2
-local SUB_INDENT = 12
-local ITEM_LABEL_WIDTH = 240
 local ITEM_FONT_SIZE = 14
 local SUB_FONT_SIZE = ITEM_FONT_SIZE - 1
+-- 任務清單沿用懸浮窗的列高公式；只有展開群組尾端保留額外留白。
+local ROW_HEIGHT = ITEM_FONT_SIZE + 8
+local SUB_ROW_HEIGHT = SUB_FONT_SIZE + 6
+local EXPANDED_GAP = 2
+local ROW_GAP = 2
+local SORT_UP = { style = UI.ICON_UP.style, width = 16, height = 10 }
+local SORT_DOWN = { style = UI.ICON_DOWN.style, width = 16, height = 10 }
+local SUB_INDENT = 12
+local ITEM_LABEL_WIDTH = 240
 local CHECK_OFFSET = math.floor((ROW_HEIGHT - UI.CHECK_HEIGHT) / 2)
 local LABEL_AFTER_CHECK = UI.CHECK_WIDTH + 6
 
@@ -184,10 +187,10 @@ local function EnsureItemRows(count)
                 SaveAndRefresh()
             end
         end
-        row.down = UI.CreateIconButton(listParent, "itv2Down" .. index, UI.ICON_DOWN, function(self)
+        row.down = UI.CreateIconButton(listParent, "itv2Down" .. index, SORT_DOWN, function(self)
             Move(self, 1)
         end)
-        row.up = UI.CreateIconButton(listParent, "itv2Up" .. index, UI.ICON_UP, function(self)
+        row.up = UI.CreateIconButton(listParent, "itv2Up" .. index, SORT_UP, function(self)
             Move(self, -1)
         end)
 
@@ -278,20 +281,20 @@ local function LayoutItemList(cat, entries, dataOnly)
 
         end
 
-        -- 主項只用顏色表示狀態（同懸浮窗），能展開的項目後面標示展開狀態
+        -- 主項只用顏色表示狀態（同懸浮窗），能展開的項目前面用三角形標示展開狀態
         local entry = entries[orderIndex]
         local view = entry.view
         local canExpand = entry.canExpand
         local isExpanded = entry.isExpanded
         local text = view.text
         if canExpand then
-            text = text .. (isExpanded and " [-]" or " [+]")
+            text = (isExpanded and "▼ " or "▶ ") .. text
         end
         row.label.itemKey = key
         UI.SetStatusText(row.label, text, view.status)
         if not dataOnly then area:Place(row.label, labelX, y, ROW_HEIGHT) end
 
-        y = y + ROW_HEIGHT + ROW_GAP
+        y = y + ROW_HEIGHT
 
         if isExpanded then
             local children = entry.children
@@ -299,17 +302,17 @@ local function LayoutItemList(cat, entries, dataOnly)
             for _, child in ipairs(children) do
                 subIndex = subIndex + 1
                 local label = subRows[subIndex]
-                UI.SetStatusText(label, (ITV2.STATUS_PREFIX[child.status] or "") .. child.text, child.status)
+                UI.SetStatusText(label, "· " .. child.text, child.status)
                 UI.SetSubRowAction(label, child.action)
-                -- 有追蹤勾選框時與主項文字對齊，固定分類仍保留細項縮排。
+                -- 細項相對主項文字縮排，與懸浮窗一致。
                 if not dataOnly then
-                    local childX = cat.fixed and SUB_INDENT or labelX
+                    local childX = labelX + UI.ChildIndent(row.label, ITEM_FONT_SIZE)
                     label:SetExtent(LIST_WIDTH - childX, SUB_ROW_HEIGHT)
                     area:Place(label, childX, y, SUB_ROW_HEIGHT)
                 end
-                y = y + SUB_ROW_HEIGHT + SUB_ROW_GAP
+                y = y + SUB_ROW_HEIGHT
             end
-            y = y + ROW_GAP
+            y = y + EXPANDED_GAP
         end
     end
 
@@ -318,7 +321,7 @@ local function LayoutItemList(cat, entries, dataOnly)
         HideSubRows(subIndex + 1)
         summaryLabel:SetText(string.format(T("TRACKED_SUMMARY"), trackedCount, #order))
     end
-    return y - ROW_GAP
+    return y
 end
 
 -- ============================================
@@ -366,10 +369,10 @@ for index, cat in ipairs(CATEGORIES) do
             SaveAndRefresh()
         end
     end
-    row.down = UI.CreateIconButton(listParent, "itv2PageDown" .. index, UI.ICON_DOWN, function()
+    row.down = UI.CreateIconButton(listParent, "itv2PageDown" .. index, SORT_DOWN, function()
         Move(1)
     end)
-    row.up = UI.CreateIconButton(listParent, "itv2PageUp" .. index, UI.ICON_UP, function()
+    row.up = UI.CreateIconButton(listParent, "itv2PageUp" .. index, SORT_UP, function()
         Move(-1)
     end)
     pageRows[index] = row
