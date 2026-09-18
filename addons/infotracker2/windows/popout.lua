@@ -20,7 +20,6 @@ local PADDING_BOTTOM = 10    -- 本體下方留白
 local PADDING_LEFT = 10      -- 文字左邊留白
 local TEXT_BAR_GAP = 10      -- 文字右邊到捲軸的留白
 local BAR_RIGHT = 2          -- 捲軸到右邊框
-local SUB_INDENT = 5
 local EXPANDED_GAP = 2       -- 展開的細項下方留白
 local ARROW_SIZE = 18
 local EDIT_SIZE = 22
@@ -248,8 +247,9 @@ local function StyleRow(label)
 end
 
 local function StyleSubRow(label)
+    label.itv2ChildWidth = nil
     label.style:SetShadow(true)
-    label:SetExtent(ListWidth() - SUB_INDENT, SubRowHeight())
+    label:SetExtent(ListWidth(), SubRowHeight())
     label.style:SetFontSize(S.panel.fontSub)
     label.itv2Text = nil
 end
@@ -377,10 +377,11 @@ local function Layout(cat, revealKey)
             shown = shown + 1
             EnsureRows(shown)
             local view = Items.View(key, ctx)
-            local isExpanded = expanded[key] and Items.CanExpand(key, ctx)
+            local canExpand = Items.CanExpand(key, ctx)
+            local isExpanded = expanded[key] and canExpand
             local text = view.shortText or view.text
-            if isExpanded then
-                text = text .. " [-]"
+            if canExpand then
+                text = (isExpanded and "▼ " or "▶ ") .. text
             end
             if key == revealKey then revealTop = y end
             local label = rows[shown]
@@ -390,14 +391,19 @@ local function Layout(cat, revealKey)
             y = y + rowHeight
 
             if isExpanded then
+                local childIndent = UI.ChildIndent(label, S.panel.fontItem)
                 local children = Items.Children(key, ctx)
                 EnsureSubRows(subShown + #children)
                 for _, child in ipairs(children) do
                     subShown = subShown + 1
                     local sub = subRows[subShown]
-                    UI.SetStatusText(sub, (ITV2.STATUS_PREFIX[child.status] or "") .. child.text, child.status)
+                    UI.SetStatusText(sub, "· " .. child.text, child.status)
                     UI.SetSubRowAction(sub, child.action)
-                    area:Place(sub, SUB_INDENT, y, subRowHeight)
+                    if sub.itv2ChildWidth ~= ListWidth() - childIndent then
+                        sub:SetExtent(ListWidth() - childIndent, subRowHeight)
+                        sub.itv2ChildWidth = ListWidth() - childIndent
+                    end
+                    area:Place(sub, childIndent, y, subRowHeight)
                     y = y + subRowHeight
                 end
                 if key == revealKey then revealBottom = y end
