@@ -37,6 +37,8 @@ go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
 ./scripts/build-release.ps1
 ```
 
+可執行 `ArcheRageAddonInstaller.exe --version` 核對實際版本。
+
 產物：`dist/ArcheRageAddonInstaller.exe`。前端原始檔位於 `installer/frontend/dist/`，直接編入 exe，無 npm 建置步驟。
 
 需要同時開發收錄插件時執行：

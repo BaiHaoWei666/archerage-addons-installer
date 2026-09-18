@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -27,6 +28,10 @@ const (
 )
 
 func main() {
+	if len(os.Args) == 2 && os.Args[1] == "--version" {
+		fmt.Println(version)
+		return
+	}
 	if err := waitForUpdateParent(); err != nil {
 		log.Fatal(err)
 	}
