@@ -3,6 +3,8 @@ package main
 import (
 	"archive/zip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
@@ -51,7 +53,7 @@ func TestInstallUpdateUninstall(t *testing.T) {
 		t.Fatal(err)
 	}
 	makeArchive(t, filepath.Join(source, "demo.zip"), map[string]string{"demo/main.lua": "new", "demo/version.txt": "1.0.0", "demo/nested/data.lua": "data"})
-	src := NewReleaseSource(source, func() string { return "" })
+	src := NewReleaseSource(source)
 	addon := &AddonInfo{Name: "demo", Version: "1.0.0"}
 	backed, err := installAddon(context.Background(), src, target, addon, nil)
 	if err != nil || backed {
@@ -109,31 +111,6 @@ func TestArchiveTraversal(t *testing.T) {
 	}
 }
 
-func TestTokenOnlyFromUserSettings(t *testing.T) {
-	const plain = "test-only-not-a-real-token"
-	protected, err := protectString(plain)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(protected, plain) {
-		t.Fatal("stored plaintext")
-	}
-	decoded, err := unprotectString(protected)
-	if err != nil || decoded != plain {
-		t.Fatal("DPAPI roundtrip failed")
-	}
-	t.Setenv("ARCHERAGE_INSTALLER_TOKEN", "environment-must-be-ignored")
-	t.Setenv("INSTALLER_GITHUB_TOKEN", "build-token-must-be-ignored")
-	value, info := resolveToken(&Settings{Token: protected})
-	if value != plain || info.Source != "settings" {
-		t.Fatal("settings precedence")
-	}
-	value, info = resolveToken(&Settings{})
-	if value != "" || info.Source != "" {
-		t.Fatal("only user settings may supply a token")
-	}
-}
-
 func TestVersionsAndBOM(t *testing.T) {
 	dir := t.TempDir()
 	writeFixture(t, filepath.Join(dir, "demo", "version.txt"), "\uFEFF1.0.0\r\n")
@@ -162,7 +139,7 @@ func TestDevelopmentJunctionIsProtected(t *testing.T) {
 		t.Fatal(err)
 	}
 	makeArchive(t, filepath.Join(release, "demo.zip"), map[string]string{"demo/main.lua": "release"})
-	src := NewReleaseSource(release, func() string { return "" })
+	src := NewReleaseSource(release)
 	_, err := installAddon(context.Background(), src, addonDir, &AddonInfo{Name: "demo"}, nil)
 	if err == nil || !strings.Contains(err.Error(), "開發連結") {
 		t.Fatalf("應明確拒絕更新開發連結：%v", err)
@@ -184,10 +161,49 @@ func TestDevelopmentJunctionIsProtected(t *testing.T) {
 }
 
 func TestLocalPathErrorIsNotNetworkError(t *testing.T) {
-	src := NewReleaseSource("", func() string { return "" })
+	src := NewReleaseSource("")
 	err := &os.PathError{Op: "open", Path: "Backup/demo", Err: fmt.Errorf("is a directory")}
 	message := src.describeError(err)
 	if strings.Contains(message, "GitHub") || !strings.Contains(message, "Backup/demo") {
 		t.Fatalf("本機錯誤分類不正確：%s", message)
+	}
+}
+
+func TestReleaseIntegrityBeforeChangingInstallation(t *testing.T) {
+	for _, mode := range []string{"checksum", "version", "valid"} {
+		t.Run(mode, func(t *testing.T) {
+			source, target := t.TempDir(), t.TempDir()
+			writeFixture(t, filepath.Join(target, "demo", "main.lua"), "old")
+			makeArchive(t, filepath.Join(source, "demo.zip"), map[string]string{"demo/main.lua": "new", "demo/version.txt": "1.0.0"})
+			bytes, err := os.ReadFile(filepath.Join(source, "demo.zip"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			sum := sha256.Sum256(bytes)
+			a := &AddonInfo{Name: "demo", Version: "1.0.0", SHA256: hex.EncodeToString(sum[:])}
+			if mode == "checksum" {
+				a.SHA256 = strings.Repeat("0", 64)
+			}
+			if mode == "version" {
+				a.Version = "2.0.0"
+			}
+			_, err = installAddon(context.Background(), NewReleaseSource(source), target, a, nil)
+			if mode == "valid" {
+				if err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatal("接受損壞或錯誤版本")
+			}
+			content, _ := os.ReadFile(filepath.Join(target, "demo", "main.lua"))
+			if string(content) != "old" {
+				t.Fatal("驗證失敗覆寫既有安裝")
+			}
+			if _, err := os.Stat(filepath.Join(target, "Backup")); !os.IsNotExist(err) {
+				t.Fatal("驗證失敗仍建立備份")
+			}
+		})
 	}
 }

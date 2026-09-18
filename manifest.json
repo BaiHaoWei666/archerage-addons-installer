@@ -1,48 +1,5 @@
 {
   "installer": {
     "version": "1.0.6"
-  },
-  "addons": [
-    {
-      "name": "infotracker2",
-      "displayName": "InfoTracker v2",
-      "version": "1.0.1",
-      "category": "資訊",
-      "description": "資訊追蹤：任務、每日挑戰、角色資訊、今日淨收入、副本",
-      "changelog": [
-        {
-          "version": "1.0.1",
-          "date": "2026-09-18",
-          "notes": [
-            "新增伊福尼爾與大象＋大樹每日任務追蹤",
-            "統一以名稱比對特產配方，修正已完成挑戰無法展開材料",
-            "展開子項時自動捲動至新內容"
-          ]
-        },
-        {
-          "version": "1.0.0",
-          "date": "2026-09-17",
-          "notes": [
-            "首次透過安裝工具發佈"
-          ]
-        }
-      ]
-    },
-    {
-      "name": "commercetracker",
-      "displayName": "Commerce Tracker",
-      "version": "1.0.0",
-      "category": "經商",
-      "description": "經商追蹤：特產包比率、售價、材料成本與利潤",
-      "changelog": [
-        {
-          "version": "1.0.0",
-          "date": "2026-09-17",
-          "notes": [
-            "首次透過安裝工具發佈"
-          ]
-        }
-      ]
-    }
-  ]
+  }
 }

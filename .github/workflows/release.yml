@@ -1,43 +1,31 @@
-name: Release
-
+name: 發布安裝器
 on:
   push:
     tags: ['v*']
-
 permissions:
   contents: write
-
 jobs:
   release:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-go@v5
         with:
           go-version-file: installer/go.mod
           cache-dependency-path: installer/go.sum
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install Wails CLI
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
-
-      - name: Build
+      - name: 核對版本
         shell: pwsh
         run: |
-          if ((Get-Content catalog/manifest.json -Raw | ConvertFrom-Json | ConvertTo-Json -Depth 20 -Compress) -ne (Get-Content manifest.json -Raw | ConvertFrom-Json | ConvertTo-Json -Depth 20 -Compress)) { throw 'Run build-release.ps1 and commit catalog before tagging.' }
-          ./scripts/build-release.ps1
-
-      - name: Test
+          $version = (Get-Content manifest.json -Raw | ConvertFrom-Json).installer.version
+          if ($env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag 與 manifest 版本不一致' }
+      - run: ./scripts/test.ps1
         shell: pwsh
-        run: ./scripts/test.ps1
-
-      - name: Publish GitHub release
+      - name: 安裝建置工具
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
+      - run: ./scripts/build-release.ps1
+        shell: pwsh
+      - name: 發布執行檔
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "${{ github.ref_name }}" dist/ArcheRageAddonInstaller.exe --title "${{ github.ref_name }}" --generate-notes
+        run: gh release create "$env:GITHUB_REF_NAME" dist/ArcheRageAddonInstaller.exe --verify-tag --title "$env:GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md

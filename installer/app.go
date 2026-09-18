@@ -37,8 +37,6 @@ type App struct {
 	busyDownload      *DownloadProgress
 	cancelBusy        context.CancelFunc
 	selfUpdateOffered bool
-	token             string
-	tokenInfo         tokenInfo
 
 	confirmMu   sync.Mutex
 	confirms    map[int]chan bool
@@ -55,8 +53,7 @@ func NewApp(sourceArg, addonDirArg string) *App {
 		addonDirOverride: addonDirArg,
 		confirms:         map[int]chan bool{},
 	}
-	a.reloadToken()
-	a.source = NewReleaseSource(sourceArg, a.currentToken)
+	a.source = NewReleaseSource(sourceArg)
 	return a
 }
 
@@ -76,19 +73,6 @@ func (a *App) shutdown(context.Context) {
 		delete(a.confirms, id)
 	}
 	a.confirmMu.Unlock()
-}
-
-func (a *App) currentToken() string {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	return a.token
-}
-
-func (a *App) reloadToken() {
-	t, info := resolveToken(a.settings)
-	a.mu.Lock()
-	a.token, a.tokenInfo = t, info
-	a.mu.Unlock()
 }
 
 func (a *App) addonDir() string {
@@ -150,10 +134,6 @@ func (a *App) Handle(msg map[string]interface{}) {
 		a.openURL(str("url"))
 	case "selfUpdate":
 		a.selfUpdate()
-	case "saveToken":
-		a.saveToken(str("token"))
-	case "clearToken":
-		a.saveToken("")
 	case "confirmReply":
 		id, _ := msg["id"].(float64)
 		ok, _ := msg["ok"].(bool)
@@ -230,7 +210,6 @@ func (a *App) postState() {
 		"busy":         a.busyText,
 		"busyProgress": a.busyPercent,
 		"download":     a.busyDownload,
-		"token":        a.tokenInfo,
 	}
 	a.mu.Unlock()
 
@@ -270,7 +249,9 @@ func (a *App) postState() {
 		}
 	}
 	state["addons"] = addons
-	state["needsToken"] = a.source.NeedsToken()
+	if manifest != nil {
+		state["warnings"] = manifest.Warnings
+	}
 	state["installer"] = map[string]interface{}{
 		"current":   version,
 		"latest":    latest,
@@ -373,7 +354,7 @@ func (a *App) refresh() {
 
 	manifestErr := ""
 	if err != nil {
-		manifestErr = a.source.describeError(err) // 會讀取權杖，不能在持有 a.mu 時呼叫
+		manifestErr = a.source.describeError(err)
 	}
 	a.mu.Lock()
 	hadManifest := a.manifest != nil
@@ -578,38 +559,6 @@ func (a *App) openURL(raw string) {
 		return
 	}
 	runtime.BrowserOpenURL(a.ctx, u.String())
-}
-
-func (a *App) saveToken(token string) {
-	token = strings.TrimSpace(token)
-	a.mu.Lock()
-	if token == "" {
-		a.settings.Token = ""
-	} else if enc, err := protectString(token); err != nil {
-		a.mu.Unlock()
-		a.toast("error", "權杖加密失敗："+err.Error())
-		return
-	} else {
-		a.settings.Token = enc
-	}
-	err := a.settings.save()
-	a.mu.Unlock()
-	if err != nil {
-		a.toast("error", "設定儲存失敗："+err.Error())
-		return
-	}
-
-	a.reloadToken()
-	a.mu.Lock()
-	a.manifest = nil
-	a.generation++
-	a.mu.Unlock()
-	if token == "" {
-		a.toast("ok", "已清除設定頁的權杖。")
-	} else {
-		a.toast("ok", "已儲存權杖，正在重新檢查更新。")
-	}
-	a.refresh()
 }
 
 // ---------- /remote/ 檔案 ----------

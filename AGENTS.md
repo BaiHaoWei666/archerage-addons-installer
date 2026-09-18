@@ -1,38 +1,22 @@
 # 專案語言規則
 
-適用於本專案所有後續開發、維護及溝通。
+- 僅遊戲內實際顯示的中文使用簡體；管理器介面、設定、錯誤、文件、註解及版本說明使用繁體。
+- 接觸到不符規則的文字時一併修正。專有名稱、識別字、路徑及必要原文保留原樣。
+- 同時供遊戲內外顯示的文字分開維護。
 
-- 僅遊戲內實際顯示的文字使用簡體中文，例如插件介面、遊戲內提示、工具提示及聊天訊息。
-- 其餘內容一律使用繁體中文，包括與使用者的溝通、安裝器／管理器介面、設定與錯誤訊息、插件在管理器中的介紹、文件、程式註解及版本說明。內容與遊戲有關，不代表它屬於遊戲內顯示文字。
-- 採「碰到就改」原則：後續工作中讀到或修改到不符合上述規則的既有文字，應一併修正；交付前檢查本次接觸的文字是否符合其顯示場景。
-- 同一段文字若同時供遊戲內及遊戲外使用，應分開維護簡體與繁體版本。
-- 專有名稱、程式識別字、API／設定鍵、路徑、網址及必要的原文技術名稱保留原樣；調整語言時維持既有功能與資料相容性。
+# 維護範圍
 
-# 插件開發流程
+- 本 repo 僅維護安裝器與來源清單。收錄 URL 的唯一來源是 repositories.json。
+- addons/ 是忽略追蹤的獨立 Git repo；插件功能、測試、版本、README 與開發規範在各自 repo 維護。
+- 線上資料從公開 Release 附件取得；插件規格見 [docs/addon-format.md](docs/addon-format.md)。
+- 修改收錄清單使用 registry workflow，不為此調高安裝器版本。
 
-- 開發 infotracker2、查詢任務 ID 或重新載入實機測試時，讀取 [.agents/skills/dev-infotracker/SKILL.md](.agents/skills/dev-infotracker/SKILL.md)，再按需求載入查詢或實機測試文件。
+# 提交與發布
 
-# Git commit 規範
-
-- 一般提交標題格式為 `type: 繁體中文摘要`；需要標示範圍時使用 `type(scope): 繁體中文摘要`。版本提交使用下列固定英文格式，作為語言規則的例外。
-- 插件版本提交固定為 `chore(<插件資料夾名稱>): bump version to <版本號>`，例如 `chore(infotracker2): bump version to 1.0.1`。
-- 安裝器版本提交固定為 `chore(installer): bump version to <版本號>`，例如 `chore(installer): bump version to 1.0.4`。版本號不加 `v`，不附加其他摘要；release tag 使用 `v<版本號>`。
-- 前綴使用小寫：`feat`（新增功能）、`fix`（修正錯誤）、`doc`（文件與 skill）、`chore`（維護與工具設定）、`refactor`（重構）、`test`（測試）、`perf`（效能）、`style`（格式）、`build`（建置）、`ci`（持續整合）、`revert`（還原）。
-- 摘要直接描述變更；不同目的的變更分開提交。
-- 範例：`feat(infotracker2): 新增每日任務追蹤`、`doc: 更新插件開發流程`、`chore: 調整開發工具設定`。
-
-# Bump 版本規則
-
-- 以根目錄 `manifest.json` 為版本來源。只調高本次有變更的插件或安裝器版本；插件同步新增 changelog，已發布版本不重用。
-- 插件 bump 必須同步 `addons/<名稱>/version.txt`（純版本號、無 `v`、無 BOM）；即使該檔被 Git 忽略也要更新本機檔案，不強制加入版本控制。完成程式碼更新與測試後才寫入版本號，不可只改版本檔來消除更新提示。
-- 使用 Junction／符號連結開發時，先確認遊戲插件路徑確實指向本專案，再從遊戲路徑讀回 `version.txt` 驗證一致。一般安裝資料夾由安裝流程更新版本檔，不單獨改寫其版本號。
-- 打包後核對根目錄與 `catalog/manifest.json` 的版本，以及 `catalog/<名稱>.zip` 內的 `<名稱>/version.txt`、程式碼與本次來源一致；本機開發連結的版本也須一致。打包腳本只寫入暫存封裝的版本檔，不代表開發目錄已同步。
-- 安裝器 bump 同步兩份 manifest 的 `installer.version`、`installer/wails.json` 的 `info.productVersion` 與建置注入版本；release tag 為同一版本的 `v<版本號>`。沿用下方發布分流與上方固定 commit 訊息格式。
-- 完成條件：上述版本核對與 `scripts/test.ps1` 通過，再分項提交版本、更新紀錄與發布產物；提交不等於授權新增 tag 或發布安裝器。
-
-# 發布分流
-
-- 插件先收尾：程式、測試、插件版本、更新紀錄與 catalog 封裝完成後獨立提交；插件提交維持安裝器版本，不新增 release tag。
-- 「獨立推送」指分開執行 push，沿用同一分支，不要求另建分支。
-- 安裝器 release（新增 tag）另作獨立提交與獨立推送，與插件收尾分開處理；只在使用者明確要求發布安裝器時執行。
-- 推送時明列目標分支或單一 tag，不使用 `--tags` 夾帶其他標籤。操作順序見 [README.md 的發布流程](README.md#發佈新版本)。
+- 一般提交：type: 繁體中文摘要，或 type(scope): 繁體中文摘要。
+- 前綴使用小寫：feat、fix、doc、chore、refactor、test、perf、style、build、ci、revert。
+- 不同目的分開提交；安裝器版本提交固定為 chore(installer): bump version to <版本號>。
+- 完成程式與測試後才調高版本，同步 manifest.json 的 installer.version 與 installer/wails.json 的 info.productVersion；建置版本從 manifest 注入。
+- 交付前執行 scripts/test.ps1 與 scripts/build-release.ps1，核對產物版本並更新 RELEASE_NOTES.md。
+- 只有使用者明確要求發布安裝器時，才建立並推送單一 v<版本號> tag。提交與推送 main 不等於授權發布。
+- 推送明列 main 或單一 tag，不使用 --tags。插件 repo 與本 repo 各自提交及推送。
