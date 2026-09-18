@@ -1,5 +1,5 @@
 -- 任務組（每日 / 生活 / 週常 / 其他）
--- 完成數沿用 infotracker：池子裡已完成的 ID 數，最多算到上限；不分陣營都能計入
+-- 完成數為任務池裡已完成的 ID 數，最多算到上限；不分陣營都能計入
 ADDON:ImportAPI(API_TYPE.QUEST.id)
 
 local T = ITV2.Text

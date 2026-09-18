@@ -42,7 +42,7 @@ UI.CHECK_WIDTH = 18
 UI.CHECK_HEIGHT = 17
 local CHECK_TEXTURE = "ui/button/check_button.dds"
 
--- 捲軸（外觀沿用 manager / autostore）
+-- 捲軸
 UI.SCROLL_BAR_WIDTH = 20
 UI.SCROLL_BAR_GAP = 4
 local SCROLL_TEXTURE = "ui/button/scroll_button.dds"
@@ -98,7 +98,7 @@ function UI.CreateCaption(parent, id, width, height, fontSize, text)
     return label
 end
 
--- 單行文字，超出寬度顯示「...」（寫法同 manager 的插件名稱）
+-- 單行文字，超出寬度顯示「...」
 function UI.CreateEllipsisText(parent, id, fontSize)
     local box = parent:CreateChildWidget("textbox", id, 0, true)
     box:SetAutoWordwrap(false)

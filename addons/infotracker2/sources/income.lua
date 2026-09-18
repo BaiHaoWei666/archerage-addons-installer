@@ -73,7 +73,7 @@ UIParent:SetEventHandler(UIEVENT_TYPE.EXP_CHANGED, function(_, amount)
     AddIncome("exp", amount)
 end)
 
--- 金額單位是銅（10000 = 1 金），顯示方式沿用 infotracker
+-- 金額單位是銅（10000 = 1 金）
 local function FormatGold(copper)
     if copper > -10000 and copper < 10000 then
         return T("LESS_THAN_1G")
