@@ -373,7 +373,7 @@ local function Layout(cat, revealKey)
     local y = 0
     local revealTop, revealBottom
     for _, key in ipairs(S.orderByCat[cat.key]) do
-        if cat.fixed or S.IsTracked(key) then
+        if S.IsTracked(key) then
             shown = shown + 1
             EnsureRows(shown)
             local view = Items.View(key, ctx)
