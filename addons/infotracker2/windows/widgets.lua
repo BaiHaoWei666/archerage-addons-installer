@@ -408,7 +408,8 @@ function UI.CreateScrollArea(parent, id, onScroll)
         local max = math.max(0, height - self.viewHeight)
         if self.maxOffset == max then return false end
         local scrollable = max > 0
-        local clamped = false
+        -- 設定範圍可能同步觸發滑塊事件，先記住本輪排版使用的位置。
+        local previousOffset = self.offset
         self.scrollable = scrollable
         self.maxOffset = max
         self.updating = true
@@ -416,14 +417,13 @@ function UI.CreateScrollArea(parent, id, onScroll)
         if self.offset > max then
             self.offset = max
             slider:SetValue(max, false)
-            clamped = true
         end
         self.updating = false
         upButton:Enable(scrollable)
         downButton:Enable(scrollable)
         thumb:Show(scrollable)
         sliderBg:SetTextureColor(scrollable and "default" or "disable")
-        return clamped
+        return self.offset ~= previousOffset
     end
 
     -- 更新內容高度後呼叫：以最小捲動量顯示區段；超過一頁時對齊區段頂端。

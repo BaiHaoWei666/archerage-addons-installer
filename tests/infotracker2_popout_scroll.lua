@@ -12,6 +12,14 @@ local function Widget(name)
         if key == "IsVisible" then return function(self) return self.visible end end
         if key == "IsMouseOver" then return function() return false end end
         if key == "SetValue" then return function(self, value) self.value = value end end
+        -- 引擎縮小範圍時可能同步夾住滑塊並觸發事件。
+        if key == "SetMinMaxValues" then return function(self, min, max)
+            local old = rawget(self, "value") or 0
+            self.value = math.max(min, math.min(old, max))
+            if old ~= self.value and self.handlers.OnSliderChanged then
+                self.handlers.OnSliderChanged(self, self.value)
+            end
+        end end
         return function() end
     end })
     if name then widgets[name] = w end
@@ -80,6 +88,12 @@ widgets.itv2PopRow5:click(false)
 assert(area.offset == 80, '超過一頁的展開內容應從父項目開始顯示')
 assert(widgets.itv2PopRow5.visible and widgets.itv2PopSubRow1.visible)
 print('PASS: 底部展開、父項可見、捲軸同步、刷新穩定及超過一頁的子項')
+
+-- 收起時範圍改變會同步觸發滑塊事件；同次點擊必須恢復上方項目。
+widgets.itv2PopRow5:click(false)
+assert(area.offset == 20, '收起後未夾住捲動位置')
+assert(widgets.itv2PopRow2.visible, '收起後上方項目要等下次刷新才出現')
+print('PASS: 收起後同次刷新立即恢復上方項目')
 
 -- 真實捲軸事件不應再次取得任務資料。
 local before = queries
