@@ -134,3 +134,18 @@ assert(ITV2.StylePreview==nil and ITV2.ExpandPreview==nil,'試看功能未清除
 assert(parent.itv2Text:sub(1,#'▼ ')=='▼ ','展開主項缺少前置三角形')
 assert(child.itv2Text:sub(1,#'· ')=='· ','子項未使用圓點前綴')
 print('PASS: 正式陰影、子項字級小一及追蹤分類細項對齊主項文字')
+
+-- 說明與面板設定共用靜態頁流程，切頁不殘留清單或操作按鈕。
+Click('itv2Tab3')
+assert(widgets.itv2HelpText1.visible and widgets.itv2HelpText2.visible,'說明內容未顯示')
+assert(not widgets.itv2ItemLabel1.visible and not widgets.itv2PanelSizeSection.visible,'說明頁殘留其他頁內容')
+assert(not widgets.itv2EditorSummary.visible and not widgets.itv2TrackAllButton.visible,'說明頁殘留追蹤操作')
+anchors,texts,queries=calls.RemoveAllAnchors,calls.SetText,queryCount
+for i=1,3 do Frame('itv2EditorWindow',1000) end
+assert(queryCount==queries and calls.RemoveAllAnchors==anchors and calls.SetText==texts,'說明頁不應定時查詢或重排')
+Click('itv2Tab2')
+assert(not widgets.itv2HelpText1.visible and widgets.itv2PanelSizeSection.visible,'面板設定頁未清除說明內容')
+assert(widgets.itv2PanelDragHint==nil,'移動說明仍留在面板設定頁')
+Click('itv2Tab1')
+assert(not widgets.itv2HelpText2.visible and widgets.itv2TrackAllButton.visible,'分類頁切換未恢復追蹤操作')
+print('PASS: 說明頁切換、內容隔離及閒置零查詢零重排')

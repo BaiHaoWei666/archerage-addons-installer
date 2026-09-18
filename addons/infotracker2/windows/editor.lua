@@ -1,5 +1,5 @@
 -- 設定視窗
--- 頁籤：各分類（勾選追蹤、調整順序、展開細項）+ 最後的「面板設定」（懸浮窗外觀、頁面開關與順序）
+-- 上方為面板設定與說明，下方依使用者順序顯示追蹤分類。
 local T = ITV2.Text
 local CATEGORIES = ITV2.CATEGORIES
 local SOURCES = ITV2.SOURCES
@@ -72,6 +72,11 @@ end
 -- 頁籤
 -- ============================================
 local PANEL_TAB = #CATEGORIES + 1
+local HELP_TAB = #CATEGORIES + 2
+local CATEGORY_TABS_TOP = TABS_TOP + TAB_HEIGHT + 16
+local divider = window:CreateColorDrawable(0.6, 0.7, 0.8, 0.35, "background")
+divider:SetExtent(WIDTH - PADDING * 2, 1)
+divider:AddAnchor("TOPLEFT", window, PADDING, TABS_TOP + TAB_HEIGHT + 7)
 
 local tabButtons = {}
 do
@@ -89,6 +94,7 @@ do
         labels[index] = cat.label
     end
     labels[PANEL_TAB] = "CAT_PANEL"
+    labels[HELP_TAB] = "CAT_HELP"
 
     for index, label in ipairs(labels) do
         local tab = UI.CreateTextButton(window, "itv2Tab" .. index, T(label), TAB_WIDTH, TAB_HEIGHT)
@@ -100,28 +106,26 @@ do
     end
 end
 
--- 頁籤位置照分類顯示順序，「面板設定」固定最後
+-- 功能頁固定在上方；追蹤分類在分隔線下方，沿用使用者排序。
 local function LayoutTabs()
-    local slots = {}
-    for _, index in ipairs(S.pageOrder) do
-        slots[#slots + 1] = index
-    end
-    slots[#slots + 1] = PANEL_TAB
-    for slot, index in ipairs(slots) do
-        local col = (slot - 1) % TABS_PER_ROW
-        local row = math.floor((slot - 1) / TABS_PER_ROW)
+    local function PlaceTab(index, col, y)
         local tab = tabButtons[index]
         tab:RemoveAllAnchors()
-        tab:AddAnchor("TOPLEFT", window,
-            PADDING + col * (TAB_WIDTH + TAB_GAP), TABS_TOP + row * (TAB_HEIGHT + TAB_GAP))
+        tab:AddAnchor("TOPLEFT", window, PADDING + col * (TAB_WIDTH + TAB_GAP), y)
         tab:Enable(index ~= activeTab)
+    end
+    PlaceTab(PANEL_TAB, 0, TABS_TOP)
+    PlaceTab(HELP_TAB, 1, TABS_TOP)
+    for slot, index in ipairs(S.pageOrder) do
+        PlaceTab(index, (slot - 1) % TABS_PER_ROW,
+            CATEGORY_TABS_TOP + math.floor((slot - 1) / TABS_PER_ROW) * (TAB_HEIGHT + TAB_GAP))
     end
 end
 
 -- ============================================
 -- 頁簽下方的動作列
 -- ============================================
-local ACTION_ROW_TOP = TABS_TOP + math.ceil(#tabButtons / TABS_PER_ROW) * (TAB_HEIGHT + TAB_GAP) + 4
+local ACTION_ROW_TOP = CATEGORY_TABS_TOP + math.ceil(#CATEGORIES / TABS_PER_ROW) * (TAB_HEIGHT + TAB_GAP) + 4
 local LIST_TOP = ACTION_ROW_TOP + 32
 
 local summaryLabel = UI.CreateCaption(window, "itv2EditorSummary", 170, 22, 13)
@@ -130,7 +134,7 @@ summaryLabel:AddAnchor("TOPLEFT", window, PADDING, ACTION_ROW_TOP + 2)
 local trackAllButton = UI.CreateTextButton(window, "itv2TrackAllButton", T("TRACK_ALL"), ACTION_BUTTON_WIDTH, 24)
 trackAllButton:AddAnchor("TOPRIGHT", window, -PADDING, ACTION_ROW_TOP)
 
--- 本頁專屬按鈕（放在「本頁全部追蹤」左邊）：收入頁 = 重置，任務頁 = 輸出ID（隱藏）
+-- 本頁專屬按鈕（放在批次追蹤按鈕左邊）：收入頁 = 重置，任務頁 = 輸出ID（隱藏）
 local pageButtonRight = -PADDING - ACTION_BUTTON_WIDTH - 4
 
 local resetIncomeButton = UI.CreateTextButton(window, "itv2ResetIncomeButton", T("INCOME_RESET"), ACTION_BUTTON_WIDTH, 24)
@@ -325,8 +329,6 @@ local sizeSectionLabel = UI.CreateCaption(listParent, "itv2PanelSizeSection", LI
     T("PANEL_SECTION_SIZE"))
 local pagesSectionLabel = UI.CreateCaption(listParent, "itv2PanelPagesSection", LIST_WIDTH, ROW_HEIGHT, 14,
     T("PANEL_SECTION_PAGES"))
-local dragHint = UI.CreateCaption(listParent, "itv2PanelDragHint", LIST_WIDTH, ROW_HEIGHT, 12,
-    T("PANEL_DRAG_HINT"))
 
 local panelRows = {}
 for index, def in ipairs(S.PANEL_SETTINGS) do
@@ -373,7 +375,6 @@ end
 local function HidePanelPage()
     sizeSectionLabel:Show(false)
     pagesSectionLabel:Show(false)
-    dragHint:Show(false)
     for _, row in ipairs(panelRows) do
         row.label:Show(false)
         row.minus:Show(false)
@@ -424,9 +425,46 @@ local function LayoutPanelPage()
         y = y + ROW_HEIGHT + ROW_GAP
     end
 
-    y = y + ROW_GAP
-    area:Place(dragHint, 0, y, ROW_HEIGHT)
-    return y + ROW_HEIGHT
+    return y
+end
+
+-- 說明頁沿用捲動區，不參與遊戲資料的定時刷新。
+local helpRows = {}
+for index, def in ipairs({
+    { title = "HELP_MOVE_TITLE", text = "PANEL_DRAG_HINT", height = 20 },
+    { title = "HELP_DUNGEON_TITLE", text = "HELP_DUNGEON", height = 60 },
+    { title = "HELP_MATERIAL_TITLE", text = "HELP_MATERIAL", height = 60 },
+}) do
+    local heading = UI.CreateCaption(listParent, "itv2HelpTitle" .. index, LIST_WIDTH, ROW_HEIGHT, 14, T(def.title))
+    local body = listParent:CreateChildWidget("textbox", "itv2HelpText" .. index, 0, true)
+    body:SetExtent(LIST_WIDTH, def.height)
+    body:SetAutoWordwrap(true)
+    body.style:SetAlign(ALIGN_LEFT)
+    body.style:SetFontSize(13)
+    body.style:SetColor(0.9, 0.9, 0.9, 1)
+    body:EnablePick(false)
+    body:SetText(T(def.text))
+    -- 若引擎提供換行後文字高度，依實際內容收合；否則使用目前字級所需的段落高度。
+    local ok, textHeight = pcall(function() return body:GetTextHeight() end)
+    local height = ok and type(textHeight) == "number" and textHeight > 0 and math.ceil(textHeight) + 2 or def.height
+    body:SetExtent(LIST_WIDTH, height)
+    helpRows[index] = { heading = heading, body = body, height = height }
+end
+local function HideHelpPage()
+    for _, row in ipairs(helpRows) do
+        row.heading:Show(false)
+        row.body:Show(false)
+    end
+end
+local function LayoutHelpPage()
+    local y = 0
+    for _, row in ipairs(helpRows) do
+        area:Place(row.heading, 0, y, ROW_HEIGHT)
+        y = y + ROW_HEIGHT + 2
+        area:Place(row.body, 0, y, row.height)
+        y = y + row.height + 10
+    end
+    return y
 end
 
 -- ============================================
@@ -438,9 +476,11 @@ function Editor.Refresh(dataOnly)
     end
 
     local isPanel = activeTab == PANEL_TAB
-    if dataOnly and isPanel then return end
+    local isHelp = activeTab == HELP_TAB
+    local isList = not isPanel and not isHelp
+    if dataOnly and not isList then return end
     local entries, signature
-    if not isPanel then
+    if isList then
         entries, signature = ReadList(CATEGORIES[activeTab])
         if dataOnly and signature == listSignature then
             LayoutItemList(CATEGORIES[activeTab], entries, true)
@@ -451,17 +491,25 @@ function Editor.Refresh(dataOnly)
     LayoutTabs()
     area:BeginLayout()
     local cat = CATEGORIES[activeTab]
-    local isList = not isPanel
 
     summaryLabel:Show(isList)
     trackAllButton:Show(isList)
-    resetIncomeButton:Show(not isPanel and cat.kind == "income")
-    dumpButton:Show(not isPanel and SHOW_DUMP_BUTTON and cat.kind == "quest")
+    resetIncomeButton:Show(isList and cat.kind == "income")
+    dumpButton:Show(isList and SHOW_DUMP_BUTTON and cat.kind == "quest")
 
+    local contentTop = isList and LIST_TOP or ACTION_ROW_TOP
+    area:SetView(PADDING, contentTop, LIST_WIDTH, HEIGHT - contentTop - PADDING)
     local function Layout()
-        if isPanel then
+        HideHelpPage()
+        if not isList then
             HideItemRows(1)
             HideSubRows(1)
+        end
+        if isHelp then
+            HidePanelPage()
+            return LayoutHelpPage()
+        end
+        if isPanel then
             return LayoutPanelPage()
         end
         HidePanelPage()

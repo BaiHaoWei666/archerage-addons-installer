@@ -107,6 +107,12 @@ if isCN then
 
     -- 面板設定
     texts.CAT_PANEL = "面板设定"
+    texts.CAT_HELP = "说明"
+    texts.HELP_MOVE_TITLE = "移动悬浮窗"
+    texts.HELP_DUNGEON_TITLE = "双击副本"
+    texts.HELP_DUNGEON = "在悬浮窗双击副本名称，会弹出建立战队确认窗，可选择是否邀请队伍成员。确认后，支持单人进入的副本会先尝试快速匹配；不支持或匹配失败时，尝试建立非公开战队。"
+    texts.HELP_MATERIAL_TITLE = "双击材料"
+    texts.HELP_MATERIAL = "在悬浮窗或设定页展开特产材料，双击可交易的材料名称，会打开拍卖行并搜索该材料。非卖品不提供搜索；单击材料不会触发查询。"
     texts.PANEL_SECTION_SIZE = "外观"
     texts.PANEL_SECTION_PAGES = "页面"
     texts.PANEL_HEIGHT = "悬浮窗高度: %d"
@@ -219,6 +225,12 @@ else
 
     -- Panel settings
     texts.CAT_PANEL = "Panel"
+    texts.CAT_HELP = "Help"
+    texts.HELP_MOVE_TITLE = "Move the panel"
+    texts.HELP_DUNGEON_TITLE = "Double-click a dungeon"
+    texts.HELP_DUNGEON = "Double-click a dungeon in the floating panel to open squad confirmation. You can invite party members. After confirmation, eligible solo dungeons try quick matching first; otherwise, or if that fails, a private squad is attempted."
+    texts.HELP_MATERIAL_TITLE = "Double-click a material"
+    texts.HELP_MATERIAL = "Expand specialty materials in the panel or settings. Double-click a tradable material to open the auction house and search for it. Non-tradable materials have no search action. A single click does not search."
     texts.PANEL_SECTION_SIZE = "Appearance"
     texts.PANEL_SECTION_PAGES = "Pages"
     texts.PANEL_HEIGHT = "Panel height: %d"
