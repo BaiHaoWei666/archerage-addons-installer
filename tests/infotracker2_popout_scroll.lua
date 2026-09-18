@@ -4,6 +4,7 @@ local function Widget(name)
     local w = { handlers = {}, visible = true }
     w.style = setmetatable({}, { __index = function() return function() end end })
     setmetatable(w, { __index = function(_, key)
+        if string.sub(key, 1, 4) == "itv2" then return nil end
         if key == "CreateChildWidget" then return function(_, _, id) return Widget(id) end end
         if key == "CreateColorDrawable" or key == "CreateDrawable" then return function() return Widget() end end
         if key == "SetHandler" then return function(self, event, fn) self.handlers[event] = fn end end
@@ -38,6 +39,7 @@ UI.CreateScrollArea = function(...)
     return area
 end
 local count = 2
+local queries = 0
 ITV2.CATEGORIES = {{ key = 'daily', label = 'daily' }}
 ITV2.Settings = {
     panel = { fontTitle = 12, fontItem = 12, fontSub = 12, width = 220, height = 114, bgAlpha = 50 },
@@ -47,7 +49,7 @@ ITV2.Settings = {
 }
 ITV2.Items = {
     NewContext = function() return {} end, CanExpand = function() return true end,
-    View = function(key) return {text = key, status = 'neutral'} end,
+    View = function(key) queries = queries + 1; return {text = key, status = 'neutral'} end,
     Children = function()
         local children = {}
         for i = 1, count do children[i] = {text = tostring(i), status = 'neutral'} end
@@ -78,3 +80,9 @@ widgets.itv2PopRow5:click(false)
 assert(area.offset == 80, '超過一頁的展開內容應從父項目開始顯示')
 assert(widgets.itv2PopRow5.visible and widgets.itv2PopSubRow1.visible)
 print('PASS: 底部展開、父項可見、捲軸同步、刷新穩定及超過一頁的子項')
+
+-- 真實捲軸事件不應再次取得任務資料。
+local before = queries
+widgets.itv2PopListSlider.handlers.OnSliderChanged(nil, 0)
+assert(queries == before, '捲動重新查詢了任務資料')
+print('PASS: 捲動零資料查詢')

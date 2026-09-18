@@ -37,19 +37,18 @@ end
 -- 今日任務（每日 / 公會）：有任務但一個都沒解鎖也沒完成 = 未解鎖
 -- status：1 未開啟、2 進行中、3 已完成（見 sources/assignment.lua）
 local function IsAssignmentUnlocked(kind)
-    local total, started = 0, 0
+    local total = 0
     for index = 1, 7 do
         local info = X2Achievement:GetTodayAssignmentInfo(kind, index)
         if info ~= nil then
             if info.status == 1 then
                 total = total + 1
             elseif info.status == 2 or info.status == 3 then
-                total = total + 1
-                started = started + 1
+                return true
             end
         end
     end
-    return total == 0 or started > 0
+    return total == 0
 end
 
 -- 每項：ok / bad = 正常 / 異常時顯示的文字 key，check = 判定函數

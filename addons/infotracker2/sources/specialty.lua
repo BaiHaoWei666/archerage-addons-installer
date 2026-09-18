@@ -14,7 +14,6 @@ local AUCTION_SEARCH_DELAY_MS = 300
 
 local craftByName = nil      -- { [產品名稱] = 配方編號 | false（同名配方有歧義） }
 local materialCache = {}     -- { [配方編號] = { { name, itemType, amount }, ... } }
-local pendingSearch = nil    -- { name, wait }
 
 local function GetCraftByName(ctx)
     if craftByName ~= nil then return craftByName end
@@ -94,7 +93,7 @@ function Specialty.CanSearchAuction(material)
     return material.itemType == nil or not ITV2.AUCTION_EXCLUDED_ITEMS[material.itemType]
 end
 
--- 打開拍賣場，稍後用名稱送出查詢（見 Tick）
+-- 打開拍賣場，稍後用名稱送出查詢（僅在有查詢時排程）
 function Specialty.SearchAuction(name)
     local ok, err = pcall(function()
         ADDON:ShowContent(UIC_AUCTION, true)
@@ -102,24 +101,13 @@ function Specialty.SearchAuction(name)
     if not ok then
         ITV2.Chat(string.format(T("AUCTION_OPEN_FAILED"), tostring(err)))
     end
-    pendingSearch = { name = name, wait = AUCTION_SEARCH_DELAY_MS }
-end
-
-function Specialty.Tick(dt)
-    if pendingSearch == nil then
-        return
-    end
-    pendingSearch.wait = pendingSearch.wait - (tonumber(dt) or 0)
-    if pendingSearch.wait > 0 then
-        return
-    end
-    local name = pendingSearch.name
-    pendingSearch = nil
-    -- 參數：頁數、最低等級、最高等級、品質、分類、完全符合、關鍵字、最低價、最高價（同 Folio105）
-    local ok, err = pcall(function()
-        X2Auction:SearchAuctionArticle(1, 0, 999, 1, 0, false, name, "0", "0")
+    ITV2.Schedule("specialtyAuction", AUCTION_SEARCH_DELAY_MS, function()
+        -- 同 Folio105；同一等待期間只送出最後選取的材料。
+        local success, reason = pcall(function()
+            X2Auction:SearchAuctionArticle(1, 0, 999, 1, 0, false, name, "0", "0")
+        end)
+        if not success then
+            ITV2.Chat(string.format(T("AUCTION_SEARCH_FAILED"), tostring(reason)))
+        end
     end)
-    if not ok then
-        ITV2.Chat(string.format(T("AUCTION_SEARCH_FAILED"), tostring(err)))
-    end
 end

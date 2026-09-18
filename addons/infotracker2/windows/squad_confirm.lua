@@ -1,4 +1,4 @@
--- 建立战队询问窗（悬浮窗副本行双击时出现）
+-- 建立戰隊詢問窗（懸浮窗副本行雙擊時出現）
 local T = ITV2.Text
 local Items = ITV2.Items
 local S = ITV2.Settings
@@ -14,6 +14,7 @@ local BUTTON_WIDTH = 90
 local BUTTON_HEIGHT = 26
 
 local pendingKey = nil
+local syncInvite = false
 
 local window = UI.CreateDialog("itv2SquadConfirm", WIDTH, HEIGHT, -60)
 
@@ -26,9 +27,10 @@ message:AddAnchor("TOPLEFT", window, PADDING, 40)
 message:EnablePick(false)
 message.style:SetColor(1, 1, 1, 1)
 
--- 「邀请队伍成员」勾选框；点文字也能切换
+-- 「邀請隊伍成員」勾選框；點文字也能切換
 local function ToggleInvite()
     S.squadInvite = not S.squadInvite
+    syncInvite = true
     S.Save()
 end
 
@@ -57,6 +59,7 @@ function SquadConfirm.Show(key)
     pendingKey = key
     message:SetText(string.format(T("SQUAD_CONFIRM_MESSAGE"), Items.GetName(key)))
     inviteCheck:SetChecked(S.squadInvite)
+    syncInvite = false
     window:Show(true)
     window:Raise()
 end
@@ -72,7 +75,9 @@ end)
 
 UI.OnLeftClick(cancelButton, Close)
 
--- 勾选框会在点击后自己再切换一次，每帧照资料重设画面
+-- 勾選框點選後會自行切換，下一幀只同步一次。
 window:SetHandler("OnUpdate", function()
+    if not syncInvite then return end
+    syncInvite = false
     inviteCheck:SetChecked(S.squadInvite)
 end)

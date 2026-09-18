@@ -5,8 +5,12 @@ ADDON:ImportAPI(API_TYPE.QUEST.id)
 local T = ITV2.Text
 local Util = ITV2.SourceUtil
 
-local function IsCompleted(questId)
-    return X2Quest:IsCompleted(questId) == true
+local function IsCompleted(questId, ctx)
+    ctx.completed = ctx.completed or {}
+    if ctx.completed[questId] == nil then
+        ctx.completed[questId] = X2Quest:IsCompleted(questId) == true
+    end
+    return ctx.completed[questId]
 end
 
 local function IsActive(questId, ctx)
@@ -54,7 +58,7 @@ local function GetMergedQuests(item, ctx)
             end
         end
         entry.ids[#entry.ids + 1] = questId
-        if IsCompleted(questId) then
+        if IsCompleted(questId, ctx) then
             entry.status = "complete"
         elseif IsActive(questId, ctx) and entry.status ~= "complete" then
             entry.status = "inProgress"
@@ -71,7 +75,7 @@ ITV2.SOURCES.quest = {
         local done = 0
         local anyActive = false
         for _, questId in ipairs(item.ids) do
-            if IsCompleted(questId) then
+            if IsCompleted(questId, ctx) then
                 done = done + 1
             elseif IsActive(questId, ctx) then
                 anyActive = true
@@ -102,7 +106,7 @@ ITV2.SOURCES.quest = {
         for _, entry in ipairs(GetMergedQuests(item, ctx)) do
             local idTexts = {}
             for _, questId in ipairs(entry.ids) do
-                local mark = IsCompleted(questId) and "*" or (IsActive(questId, ctx) and "~" or "")
+                local mark = IsCompleted(questId, ctx) and "*" or (IsActive(questId, ctx) and "~" or "")
                 idTexts[#idTexts + 1] = tostring(questId) .. mark
             end
             ITV2.Chat(string.format(T("DUMP_LINE"),

@@ -10,7 +10,7 @@ local DUNGEON_KIND_ID = 4
 local SQUAD_COOLDOWN_MS = 5000
 local CANNOT_SOLO = { [24] = true, [43] = true, [52] = true, [53] = true, [66] = true, [80] = true }
 
-local squadCooldownMs = 0
+local squadCooldownUntil = 0
 
 local function GetDungeonList(ctx)
     if ctx ~= nil and ctx.dungeonList ~= nil then
@@ -26,8 +26,9 @@ end
 local function CreateSquad(instance, inviteParty)
     local name = X2BattleField:GetInstanceName(instance.type) or "?"
 
-    if squadCooldownMs > 0 then
-        Chat(string.format(T("COOLDOWN_WAIT"), math.ceil(squadCooldownMs / 1000)))
+    local remaining = squadCooldownUntil - ITV2.NowMs()
+    if remaining > 0 then
+        Chat(string.format(T("COOLDOWN_WAIT"), math.ceil(remaining / 1000)))
         return
     end
 
@@ -53,7 +54,7 @@ local function CreateSquad(instance, inviteParty)
     if info.singleApplyAvailable == true and not CANNOT_SOLO[instance.type] then
         Chat(string.format(T("QUICK_ENTER"), name))
         if X2Squad:CreateSquad(instance.type, SOT_DIRECT_MATCHING, "", inviteParty, minLV, minGS) then
-            squadCooldownMs = SQUAD_COOLDOWN_MS
+            squadCooldownUntil = ITV2.NowMs() + SQUAD_COOLDOWN_MS
             Chat(string.format(T("CREATE_SUCCESS_QUICK"), name, tostring(instance.type)))
             return
         end
@@ -63,7 +64,7 @@ local function CreateSquad(instance, inviteParty)
     end
 
     if X2Squad:CreateSquad(instance.type, SOT_PRIVATE, "", inviteParty, minLV, minGS) then
-        squadCooldownMs = SQUAD_COOLDOWN_MS
+        squadCooldownUntil = ITV2.NowMs() + SQUAD_COOLDOWN_MS
         Chat(string.format(T("CREATE_SUCCESS_PRIVATE"), name))
     else
         Chat(string.format(T("CREATE_FAILED_PRIVATE"), name))
@@ -105,9 +106,4 @@ ITV2.SOURCES.dungeon = {
         CreateSquad(instance, options ~= nil and options.inviteParty)
     end,
 
-    Tick = function(dt)
-        if squadCooldownMs > 0 then
-            squadCooldownMs = math.max(0, squadCooldownMs - dt)
-        end
-    end,
 }

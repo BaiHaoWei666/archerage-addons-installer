@@ -1,5 +1,5 @@
--- 设定窗口
--- 页签：各分类（勾选追踪、调整顺序、展开细项）+ 最后的「面板设定」（悬浮窗外观、页面开关与顺序）
+-- 設定視窗
+-- 頁籤：各分類（勾選追蹤、調整順序、展開細項）+ 最後的「面板設定」（懸浮窗外觀、頁面開關與順序）
 local T = ITV2.Text
 local CATEGORIES = ITV2.CATEGORIES
 local SOURCES = ITV2.SOURCES
@@ -10,7 +10,7 @@ local UI = ITV2.UI
 local Editor = {}
 ITV2.Editor = Editor
 
--- 核对用：任务页出现「输出本页ID」，平时隐藏；要用时改成 true
+-- 核對用：任務頁出現「輸出本頁ID」，平時隱藏；要用時改成 true
 local SHOW_DUMP_BUTTON = false
 
 local WIDTH = 430
@@ -34,9 +34,9 @@ local TABS_PER_ROW = 4
 local TABS_TOP = 40
 local ACTION_BUTTON_WIDTH = 110
 
-local expanded = {}              -- { [itemKey] = true }（只存在本次游戏中）
+local expanded = {}              -- { [itemKey] = true }（只存在本次遊戲中）
 local activeTab = 1
-local refreshPending = false     -- 下一帧再刷新一次
+local refreshPending = false     -- 下一幀再重新整理一次
 
 local window = UI.CreateDialog("itv2EditorWindow", WIDTH, HEIGHT)
 
@@ -50,7 +50,7 @@ UI.OnLeftClick(closeButton, function()
     window:Show(false)
 end)
 
--- 设定窗口里的勾选框：勾选框会在点击后自己再切换一次，下一帧再刷新让画面以资料为准
+-- 設定視窗裡的勾選框：勾選框會在點選後自己再切換一次，下一幀再重新整理讓畫面以資料為準
 local function CreateCheckBox(parent, id, fn)
     return UI.CreateCheckBox(parent, id, function(self, doubleClick)
         fn(self, doubleClick)
@@ -64,13 +64,13 @@ local function SaveAndRefresh()
 end
 
 -- ============================================
--- 页签
+-- 頁籤
 -- ============================================
 local PANEL_TAB = #CATEGORIES + 1
 
 local tabButtons = {}
 do
-    -- 目前页签以停用（按下）状态标示，文字维持一般颜色不变灰
+    -- 目前頁籤以停用（按下）狀態標示，文字維持一般顏色不變灰
     local textColor = { 1, 1, 1, 1 }
     local ok, color = pcall(function()
         return UIParent:GetFontColor("btn")
@@ -95,7 +95,7 @@ do
     end
 end
 
--- 页签位置照分类显示顺序，「面板设定」固定最后
+-- 頁籤位置照分類顯示順序，「面板設定」固定最後
 local function LayoutTabs()
     local slots = {}
     for _, index in ipairs(S.pageOrder) do
@@ -114,7 +114,7 @@ local function LayoutTabs()
 end
 
 -- ============================================
--- 页签下方的动作列
+-- 頁簽下方的動作列
 -- ============================================
 local ACTION_ROW_TOP = TABS_TOP + math.ceil(#tabButtons / TABS_PER_ROW) * (TAB_HEIGHT + TAB_GAP) + 4
 local LIST_TOP = ACTION_ROW_TOP + 32
@@ -125,7 +125,7 @@ summaryLabel:AddAnchor("TOPLEFT", window, PADDING, ACTION_ROW_TOP + 2)
 local trackAllButton = UI.CreateTextButton(window, "itv2TrackAllButton", T("TRACK_ALL"), ACTION_BUTTON_WIDTH, 24)
 trackAllButton:AddAnchor("TOPRIGHT", window, -PADDING, ACTION_ROW_TOP)
 
--- 本页专属按钮（放在「本页全部追踪」左边）：收入页 = 重置，任务页 = 输出ID（隐藏）
+-- 本頁專屬按鈕（放在「本頁全部追蹤」左邊）：收入頁 = 重置，任務頁 = 輸出ID（隱藏）
 local pageButtonRight = -PADDING - ACTION_BUTTON_WIDTH - 4
 
 local resetIncomeButton = UI.CreateTextButton(window, "itv2ResetIncomeButton", T("INCOME_RESET"), ACTION_BUTTON_WIDTH, 24)
@@ -135,17 +135,18 @@ local dumpButton = UI.CreateTextButton(window, "itv2DumpButton", T("DUMP"), ACTI
 dumpButton:AddAnchor("TOPRIGHT", window, pageButtonRight, ACTION_ROW_TOP)
 
 -- ============================================
--- 清单（可卷动）
+-- 清單（可捲動）
 -- ============================================
 local LIST_WIDTH = WIDTH - PADDING * 2 - UI.SCROLL_BAR_GAP - UI.SCROLL_BAR_WIDTH
-local area = UI.CreateScrollArea(window, "itv2EditorList", function()
-    Editor.Refresh()
+local area
+area = UI.CreateScrollArea(window, "itv2EditorList", function()
+    area:Reposition()
 end)
 area:SetView(PADDING, LIST_TOP, LIST_WIDTH, HEIGHT - LIST_TOP - PADDING)
 local listParent = area.content
 
 -- ============================================
--- 分类页：项目行与细项行（依需要建立，重复使用）
+-- 分類頁：項目行與細項行（依需要建立，重複使用）
 -- ============================================
 local itemRows = {}
 local subRows = {}
@@ -154,7 +155,7 @@ local function EnsureItemRows(count)
     for index = #itemRows + 1, count do
         local row = {}
 
-        -- 最前面的勾选框：是否在悬浮窗追踪
+        -- 最前面的勾選框：是否在懸浮窗追蹤
         row.check = CreateCheckBox(listParent, "itv2Track" .. index, function(self)
             local key = self.itemKey
             if key ~= nil and S.SetTracked(key, not S.IsTracked(key)) then
@@ -162,7 +163,7 @@ local function EnsureItemRows(count)
             end
         end)
 
-        -- 点名称：展开 / 收起
+        -- 點名稱：展開 / 收起
         row.label = UI.CreateLabel(listParent, "itv2ItemLabel" .. index, ITEM_LABEL_WIDTH, ROW_HEIGHT, 13)
         row.label:EnablePick(true)
         area:BindWheel(row.label)
@@ -218,9 +219,26 @@ local function HideSubRows(fromIndex)
     end
 end
 
-local function LayoutItemList(cat)
-    local order = S.orderByCat[cat.key]
+-- 每次只取得一份顯示資料；結構未變時僅更新文字與操作。
+local listSignature = nil
+local function ReadList(cat)
     local ctx = Items.NewContext()
+    local entries, signature = {}, {}
+    for _, key in ipairs(S.orderByCat[cat.key]) do
+        local canExpand = Items.CanExpand(key, ctx)
+        local isExpanded = canExpand and expanded[key]
+        local children = isExpanded and Items.Children(key, ctx) or {}
+        entries[#entries + 1] = {
+            key = key, view = Items.View(key, ctx), canExpand = canExpand,
+            isExpanded = isExpanded, children = children,
+        }
+        signature[#signature + 1] = key .. ":" .. tostring(canExpand) .. ":" .. tostring(isExpanded) .. ":" .. #children
+    end
+    return entries, table.concat(signature, "|")
+end
+
+local function LayoutItemList(cat, entries, dataOnly)
+    local order = S.orderByCat[cat.key]
 
     EnsureItemRows(#order)
 
@@ -234,68 +252,71 @@ local function LayoutItemList(cat)
             trackedCount = trackedCount + 1
         end
 
-        -- fixed 分类（每日挑战）固定全部显示：没有勾选框与排序箭头，文字靠左
-        local labelX = LABEL_AFTER_CHECK
-        if cat.fixed then
-            labelX = 0
-            row.check:Show(false)
-            row.up:Show(false)
-            row.down:Show(false)
-        else
-            row.check.itemKey = key
-            row.check:SetChecked(S.IsTracked(key))
-            area:Place(row.check, 0, y + CHECK_OFFSET, UI.CHECK_HEIGHT)
+        local labelX = cat.fixed and 0 or LABEL_AFTER_CHECK
+        if not dataOnly then
+            -- 固定分類不顯示勾選框與排序箭頭。
+            if cat.fixed then
+                labelX = 0
+                row.check:Show(false)
+                row.up:Show(false)
+                row.down:Show(false)
+            else
+                row.check.itemKey = key
+                row.check:SetChecked(S.IsTracked(key))
+                area:Place(row.check, 0, y + CHECK_OFFSET, UI.CHECK_HEIGHT)
 
-            -- 右边由右到左：上箭头、下箭头
-            row.up.catKey, row.up.orderIndex = cat.key, orderIndex
-            row.down.catKey, row.down.orderIndex = cat.key, orderIndex
-            local right = area:PlaceIcon(row.up, LIST_WIDTH, y, ROW_HEIGHT)
-            area:PlaceIcon(row.down, right, y, ROW_HEIGHT)
+                -- 右邊由右到左：上箭頭、下箭頭
+                row.up.catKey, row.up.orderIndex = cat.key, orderIndex
+                row.down.catKey, row.down.orderIndex = cat.key, orderIndex
+                local right = area:PlaceIcon(row.up, LIST_WIDTH, y, ROW_HEIGHT)
+                area:PlaceIcon(row.down, right, y, ROW_HEIGHT)
+            end
+
         end
 
-        -- 主项只用颜色表示状态（同悬浮窗），能展开的项目后面标示展开状态
-        local view = Items.View(key, ctx)
-        local canExpand = Items.CanExpand(key, ctx)
-        local isExpanded = canExpand and expanded[key]
+        -- 主項只用顏色表示狀態（同懸浮窗），能展開的項目後面標示展開狀態
+        local entry = entries[orderIndex]
+        local view = entry.view
+        local canExpand = entry.canExpand
+        local isExpanded = entry.isExpanded
         local text = view.text
         if canExpand then
             text = text .. (isExpanded and " [-]" or " [+]")
         end
         row.label.itemKey = key
-        row.label:SetText(text)
-        UI.SetTextColor(row.label, UI.StatusColor(view.status))
-        area:Place(row.label, labelX, y, ROW_HEIGHT)
+        UI.SetStatusText(row.label, text, view.status)
+        if not dataOnly then area:Place(row.label, labelX, y, ROW_HEIGHT) end
 
         y = y + ROW_HEIGHT + ROW_GAP
 
         if isExpanded then
-            local children = Items.Children(key, ctx)
+            local children = entry.children
             EnsureSubRows(subIndex + #children)
             for _, child in ipairs(children) do
                 subIndex = subIndex + 1
                 local label = subRows[subIndex]
-                label:SetText((ITV2.STATUS_PREFIX[child.status] or "") .. child.text)
-                UI.SetTextColor(label, UI.StatusColor(child.status))
+                UI.SetStatusText(label, (ITV2.STATUS_PREFIX[child.status] or "") .. child.text, child.status)
                 UI.SetSubRowAction(label, child.action)
-                -- 缩排跟着主项文字走
-                area:Place(label, labelX + SUB_INDENT, y, SUB_ROW_HEIGHT)
+                -- 縮排跟著主項文字走
+                if not dataOnly then area:Place(label, labelX + SUB_INDENT, y, SUB_ROW_HEIGHT) end
                 y = y + SUB_ROW_HEIGHT + SUB_ROW_GAP
             end
             y = y + ROW_GAP
         end
     end
 
-    HideItemRows(#order + 1)
-    HideSubRows(subIndex + 1)
-
-    summaryLabel:SetText(string.format(T("TRACKED_SUMMARY"), trackedCount, #order))
+    if not dataOnly then
+        HideItemRows(#order + 1)
+        HideSubRows(subIndex + 1)
+        summaryLabel:SetText(string.format(T("TRACKED_SUMMARY"), trackedCount, #order))
+    end
     return y - ROW_GAP
 end
 
 -- ============================================
--- 面板设定页（也放在卷动区里）
---   外观：PANEL_SETTINGS 每项一行「名称: 数值」，右边 － ＋
---   页面：每个分类一个勾选框与上下箭头；关掉的分类不会出现在悬浮窗的切页里
+-- 面板設定頁（也放在捲動區裡）
+--   外觀：PANEL_SETTINGS 每項一行「名稱: 數值」，右邊 － ＋
+--   頁面：每個分類一個勾選框與上下箭頭；關掉的分類不會出現在懸浮窗的切頁裡
 -- ============================================
 local sizeSectionLabel = UI.CreateCaption(listParent, "itv2PanelSizeSection", LIST_WIDTH, ROW_HEIGHT, 14,
     T("PANEL_SECTION_SIZE"))
@@ -368,7 +389,7 @@ local function LayoutPanelPage()
 
     area:Place(sizeSectionLabel, 0, y, ROW_HEIGHT)
     y = y + ROW_HEIGHT + ROW_GAP
-    -- 右边由右到左：＋、－
+    -- 右邊由右到左：＋、－
     for _, row in ipairs(panelRows) do
         local def = row.def
         local value = S.panel[def.key]
@@ -386,7 +407,7 @@ local function LayoutPanelPage()
     y = y + ROW_GAP * 2
     area:Place(pagesSectionLabel, 0, y, ROW_HEIGHT)
     y = y + ROW_HEIGHT + ROW_GAP
-    -- 照显示顺序列出；右边由右到左：上箭头、下箭头
+    -- 照顯示順序列出；右邊由右到左：上箭頭、下箭頭
     for _, pageIndex in ipairs(S.pageOrder) do
         local row = pageRows[pageIndex]
         row.check:SetChecked(S.IsPageEnabled(pageIndex))
@@ -406,16 +427,26 @@ local function LayoutPanelPage()
 end
 
 -- ============================================
--- 刷新与操作
+-- 重新整理與操作
 -- ============================================
-function Editor.Refresh()
+function Editor.Refresh(dataOnly)
     if not window:IsVisible() then
         return
     end
 
-    LayoutTabs()
-
     local isPanel = activeTab == PANEL_TAB
+    if dataOnly and isPanel then return end
+    local entries, signature
+    if not isPanel then
+        entries, signature = ReadList(CATEGORIES[activeTab])
+        if dataOnly and signature == listSignature then
+            LayoutItemList(CATEGORIES[activeTab], entries, true)
+            return
+        end
+    end
+    listSignature = signature
+    LayoutTabs()
+    area:BeginLayout()
     local cat = CATEGORIES[activeTab]
     local isList = not isPanel and not cat.fixed
 
@@ -431,11 +462,11 @@ function Editor.Refresh()
             return LayoutPanelPage()
         end
         HidePanelPage()
-        return LayoutItemList(cat)
+        return LayoutItemList(cat, entries, false)
     end
 
     if area:SetContentHeight(Layout()) then
-        Layout()
+        area:Reposition()
     end
 end
 
@@ -447,7 +478,7 @@ local function SelectTab(index)
     Editor.Refresh()
 end
 
--- 开关设定窗口；打开时切到 page 分类（悬浮窗目前的分类）
+-- 開關設定視窗；開啟時切到 page 分類（懸浮窗目前的分類）
 function Editor.Toggle(page)
     window:Show(not window:IsVisible())
     if window:IsVisible() then
@@ -484,11 +515,13 @@ end)
 
 local elapsed = 0
 window:SetHandler("OnUpdate", function(self, dt)
+    if not self:IsVisible() then return end
     elapsed = elapsed + dt
     if elapsed < REFRESH_MS and not refreshPending then
         return
     end
     elapsed = 0
+    local dataOnly = not refreshPending
     refreshPending = false
-    Editor.Refresh()
+    Editor.Refresh(dataOnly)
 end)
