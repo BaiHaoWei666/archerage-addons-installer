@@ -20,7 +20,7 @@ local PADDING_BOTTOM = 10    -- 本體下方留白
 local PADDING_LEFT = 10      -- 文字左邊留白
 local TEXT_BAR_GAP = 10      -- 文字右邊到捲軸的留白
 local BAR_RIGHT = 2          -- 捲軸到右邊框
-local SUB_INDENT = 10
+local SUB_INDENT = 5
 local EXPANDED_GAP = 2       -- 展開的細項下方留白
 local ARROW_SIZE = 18
 local EDIT_SIZE = 22
@@ -318,14 +318,14 @@ function Popout.ApplyLayout()
 end
 
 -- ============================================
--- 懸停：顯示切頁 / 齒輪按鈕與捲軸
+-- 懸停：顯示切頁 / 齒輪按鈕
 -- ============================================
 local hovered = false
 local leftFor = 0
 
--- 捲軸平時隱藏（位置仍保留，內容寬度不變），懸停且內容超出時才出現
+-- 內容超出可視高度時顯示捲軸，不受滑鼠懸停影響。
 local function UpdateBarVisible()
-    area.bar:Show(hovered and area.scrollable == true)
+    area.bar:Show(area.scrollable == true)
 end
 
 local function SetHovered(visible)
@@ -336,7 +336,6 @@ local function SetHovered(visible)
     if not visible then
         ShowPageMenu(false)
     end
-    UpdateBarVisible()
 end
 
 local function IsAnyMouseOver(labels, count)

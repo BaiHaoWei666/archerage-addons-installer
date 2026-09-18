@@ -4,7 +4,11 @@ local function Count(key) calls[key]=(calls[key] or 0)+1 end
 local function Widget(name)
     local w={handlers={},visible=true}
     w.style=setmetatable({}, {__index=function(_,method)
-        return function() Count('style.'..method) end
+        return function(self,value)
+            Count('style.'..method)
+            if method=='SetShadow' then self.shadow=value end
+            if method=='SetFontSize' then self.fontSize=value end
+        end
     end})
     setmetatable(w,{__index=function(_,key)
         if string.sub(key,1,4)=='itv2' then return nil end
@@ -114,3 +118,17 @@ widgets.itv2PopRow30.IsMouseOver=function() error('掃描了不可見列') end
 for i=1,30 do Frame('itv2PopoutWindow',1000/60) end
 assert(not widgets.itv2PopPrev.visible,'離開後未隱藏按鈕')
 print('PASS: 60 FPS 懸停檢查從每秒 60 次降為 12 次，只檢查可見列')
+-- 正式樣式：設定頁陰影、主子項字級差與追蹤分類的左緣對齊。
+Click('itv2Tab1')
+for _,id in ipairs({'itv2ItemLabel1','itv2SubLabel1'}) do
+    assert(widgets[id].style.shadow==true,'設定頁文字缺少陰影：'..id)
+end
+for _,id in ipairs({'itv2EditorTitle','itv2Tab1','itv2EditorSummary','itv2PanelSizeSection','itv2TrackAllButton'}) do
+    assert(widgets[id].style.shadow~=true,'非清單文字不應額外加上陰影：'..id)
+end
+local parent=widgets.itv2ItemLabel1
+local child=widgets.itv2SubLabel1
+assert(child.style.fontSize==parent.style.fontSize-1,'子項字級不是主項減一')
+assert(child.itv2Placement.x==parent.itv2Placement.x,'追蹤分類子項未對齊主項文字')
+assert(ITV2.StylePreview==nil,'試看功能未清除')
+print('PASS: 正式陰影、子項字級小一及追蹤分類左緣對齊')

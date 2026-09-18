@@ -86,3 +86,18 @@ local before = queries
 widgets.itv2PopListSlider.handlers.OnSliderChanged(nil, 0)
 assert(queries == before, '捲動重新查詢了任務資料')
 print('PASS: 捲動零資料查詢')
+
+-- 上下邊界保留相交的半行，完全超出的行仍隱藏。
+area:SetView(0, 0, 200, 100, 0)
+area.offset = 10
+area:BeginLayout()
+local partialTop, partialBottom = Widget('partialTop'), Widget('partialBottom')
+local outsideTop, outsideBottom = Widget('outsideTop'), Widget('outsideBottom')
+area:Place(partialTop, 0, 0, 20)
+area:Place(partialBottom, 0, 100, 20)
+area:Place(outsideTop, 0, -10, 20)
+area:Place(outsideBottom, 0, 110, 20)
+assert(partialTop.visible and partialBottom.visible, '半行文字被整行隱藏')
+assert(not outsideTop.visible and not outsideBottom.visible, '完全超出邊界仍顯示')
+assert(partialTop.itv2Placement.y == -10, '上緣半行的偏移不正確')
+print('PASS: 上下邊界半行保留、完全超界隱藏')

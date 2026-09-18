@@ -24,6 +24,8 @@ local SUB_ROW_HEIGHT = 22
 local SUB_ROW_GAP = 2
 local SUB_INDENT = 12
 local ITEM_LABEL_WIDTH = 240
+local ITEM_FONT_SIZE = 14
+local SUB_FONT_SIZE = ITEM_FONT_SIZE - 1
 local CHECK_OFFSET = math.floor((ROW_HEIGHT - UI.CHECK_HEIGHT) / 2)
 local LABEL_AFTER_CHECK = UI.CHECK_WIDTH + 6
 
@@ -164,7 +166,8 @@ local function EnsureItemRows(count)
         end)
 
         -- 點名稱：展開 / 收起
-        row.label = UI.CreateLabel(listParent, "itv2ItemLabel" .. index, ITEM_LABEL_WIDTH, ROW_HEIGHT, 13)
+        row.label = UI.CreateLabel(listParent, "itv2ItemLabel" .. index, ITEM_LABEL_WIDTH, ROW_HEIGHT, ITEM_FONT_SIZE)
+        row.label.style:SetShadow(true)
         row.label:EnablePick(true)
         area:BindWheel(row.label)
         UI.OnLeftClick(row.label, function(self)
@@ -195,7 +198,8 @@ end
 local function EnsureSubRows(count)
     for index = #subRows + 1, count do
         local label = UI.CreateLabel(listParent, "itv2SubLabel" .. index,
-            LIST_WIDTH - LABEL_AFTER_CHECK - SUB_INDENT, SUB_ROW_HEIGHT, 12)
+            LIST_WIDTH - LABEL_AFTER_CHECK, SUB_ROW_HEIGHT, SUB_FONT_SIZE)
+        label.style:SetShadow(true)
         label:EnablePick(false)
         area:BindWheel(label)
         UI.OnLeftClick(label, UI.RunSubRowAction)
@@ -297,8 +301,12 @@ local function LayoutItemList(cat, entries, dataOnly)
                 local label = subRows[subIndex]
                 UI.SetStatusText(label, (ITV2.STATUS_PREFIX[child.status] or "") .. child.text, child.status)
                 UI.SetSubRowAction(label, child.action)
-                -- 縮排跟著主項文字走
-                if not dataOnly then area:Place(label, labelX + SUB_INDENT, y, SUB_ROW_HEIGHT) end
+                -- 有追蹤勾選框時與主項文字對齊，固定分類仍保留細項縮排。
+                if not dataOnly then
+                    local childX = cat.fixed and SUB_INDENT or labelX
+                    label:SetExtent(LIST_WIDTH - childX, SUB_ROW_HEIGHT)
+                    area:Place(label, childX, y, SUB_ROW_HEIGHT)
+                end
                 y = y + SUB_ROW_HEIGHT + SUB_ROW_GAP
             end
             y = y + ROW_GAP

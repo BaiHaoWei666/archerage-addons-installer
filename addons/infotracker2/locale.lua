@@ -8,9 +8,9 @@ if isCN then
     texts.EDITOR_TITLE = "资讯追踪 - 设定"
     texts.LOADED = "[InfoTracker v2] 已载入"
 
-    texts.CAT_DAILY = "每日"
+    texts.CAT_DAILY = "每日任务"
     texts.CAT_VOCATION = "生活"
-    texts.CAT_WEEKLY = "周常"
+    texts.CAT_WEEKLY = "每周任务"
     texts.CAT_OTHERS = "其他"
 
     texts.TRACKED_SUMMARY = "本页已追踪 %d / %d"
@@ -118,9 +118,9 @@ else
     texts.EDITOR_TITLE = "Info Tracker - Setup"
     texts.LOADED = "[InfoTracker v2] Loaded"
 
-    texts.CAT_DAILY = "Daily"
+    texts.CAT_DAILY = "Daily Quests"
     texts.CAT_VOCATION = "Vocation"
-    texts.CAT_WEEKLY = "Weekly"
+    texts.CAT_WEEKLY = "Weekly Quests"
     texts.CAT_OTHERS = "Other"
 
     texts.TRACKED_SUMMARY = "Tracked on this page: %d / %d"
