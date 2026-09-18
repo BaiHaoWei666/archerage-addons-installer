@@ -162,7 +162,7 @@ function renderList() {
       html += `<div class="notice warn">${svg('alert')}<div><b>找不到插件資料夾</b><span>請到設定選擇 ArcheRage 的 Addon 資料夾。</span></div><button class="btn small" data-act="nav" data-view="settings">設定</button></div>`;
     }
     for (const warning of d.warnings || []) {
-      html += `<div class="notice warn">${svg("alert")}<div><b>部分來源無法載入</b><span>${esc(warning)}</span></div></div>`;
+      html += `<div class="notice warn">${svg("alert")}<div><b>注意事項</b><span>${esc(warning)}</span></div></div>`;
     }
     const items = visibleAddons();
     if (!items.length) {
