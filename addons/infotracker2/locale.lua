@@ -15,7 +15,8 @@ if isCN then
 
     texts.TRACKED_SUMMARY = "本页已追踪 %d / %d"
     texts.DUMP = "输出本页ID"
-    texts.TRACK_ALL = "本页全部追踪"
+    texts.TRACK_ALL = "全部加入追踪"
+    texts.UNTRACK_ALL = "全部移除追踪"
     texts.EMPTY_HINT = "点这里选择要追踪的项目"
     texts.QUEST_FALLBACK = "任务 %d"
     texts.QUEST_SUPPLY_SHORTAGE = "物资不足"
@@ -127,6 +128,7 @@ else
     texts.TRACKED_SUMMARY = "Tracked on this page: %d / %d"
     texts.DUMP = "Dump page IDs"
     texts.TRACK_ALL = "Track all"
+    texts.UNTRACK_ALL = "Untrack all"
     texts.EMPTY_HINT = "Click here to pick items"
     texts.QUEST_FALLBACK = "Quest %d"
     texts.QUEST_SUPPLY_SHORTAGE = "Supply Shortage"
