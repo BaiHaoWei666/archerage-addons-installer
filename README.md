@@ -55,6 +55,8 @@ go install github.com/wailsapp/wails/v2/cmd/wails@v2.16.0
 
 ## 收錄與發布
 
+使用者未明確要求升版或發布時，保留目前版本；一般修改、測試、提交或推送不自動升版。
+
 新增第三方插件，只需修改 URL 清單；對方不需要主專案寫入權限。格式、附件與工作流程約定見 [插件發布格式](docs/addon-format.md)。
 
 - 修改 `repositories.json` 並推送 main：workflow 更新 `registry` 的清單附件，無須重發 exe。

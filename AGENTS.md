@@ -14,10 +14,12 @@
 
 # 提交與發布
 
+- 使用者未明確要求升版或發布時，保留目前版本；一般修改、測試、提交或推送不自動升版。已發布版本不重用。
+
 - 一般提交：type: 繁體中文摘要，或 type(scope): 繁體中文摘要。
 - 前綴使用小寫：feat、fix、doc、chore、refactor、test、perf、style、build、ci、revert。
 - 不同目的分開提交；安裝器版本提交固定為 chore(installer): bump version to <版本號>。
-- 完成程式與測試後才調高版本，同步 manifest.json 的 installer.version 、installer/wails.json 的 info.productVersion 與 catalog/manifest.json 的 installer.version；建置版本從 manifest 注入。
-- 交付前執行 scripts/test.ps1 與 scripts/build-release.ps1，核對產物版本並更新 RELEASE_NOTES.md。
+- 升版前完成程式與測試，再同步 manifest.json 的 installer.version、installer/wails.json 的 info.productVersion 與 catalog/manifest.json 的 installer.version；建置版本從 manifest 注入。
+- 一般修改交付前執行 scripts/test.ps1；升版或發布時才執行 scripts/build-release.ps1，核對產物版本並更新 RELEASE_NOTES.md。
 - 只有使用者明確要求發布安裝器時，才建立並推送單一 v<版本號> tag。提交與推送 main 不等於授權發布。
 - 推送明列 main 或單一 tag，不使用 --tags。插件 repo 與本 repo 各自提交及推送。
